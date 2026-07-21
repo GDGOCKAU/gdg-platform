@@ -15,6 +15,9 @@ app.get("/", (req, res) => {
   });
 });
 
+// =======================================================
+// ================== Database Tester ====================
+// =======================================================
 app.get("/api/test-database", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW() AS current_time");
@@ -55,6 +58,18 @@ app.get("/api/test-db", async (req, res) => {
     });
   }
 });
+
+// =======================================================
+// =======================================================
+
+
+// =======================================================
+// =================== Problem Page ======================
+const problemRoutes = require("./routes/problemRoutes");
+
+app.use("/api/problems", problemRoutes);
+// =======================================================
+
 
 const PORT = process.env.PORT || 5000;
 

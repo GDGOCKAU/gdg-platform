@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import gdgLogoImg from "./assets/gdg-logo.png";
 import { useNavigate } from "react-router-dom";
 
@@ -154,6 +154,9 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
   const [language, setLanguage] = useState("Python 3");
   const [consoleOpen, setConsoleOpen] = useState(true);
   const [runState, setRunState] = useState("idle");
+
+  const [problem, setProblem] = useState(null);
+
   const navigate = useNavigate();
 
   const handleRun = () => {
@@ -162,12 +165,34 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
     setTimeout(() => setRunState("done"), 1800);
   };
 
+  useEffect(() => {
+    const fetchProblem = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/problems/1"
+        );
+
+        const data = await response.json();
+
+        setProblem(data);
+      } catch (error) {
+        console.error("Fetch problem error:", error);
+      }
+    };
+
+    fetchProblem();
+  }, []);
+
   const navBg = darkMode ? "#1E1E1E" : "#FFFFFF";
   const leftPanelBg = darkMode ? "#181818" : "#FFFFFF";
   const textColor = darkMode ? "#E0E0E0" : "#1C1B1F";
   const subTextColor = darkMode ? "#AAAAAA" : "#3C4043";
   const borderColor = darkMode ? "#333333" : "#E0E0E0";
   const inlineCodeBg = darkMode ? "#2A2A2A" : "#F1F3F4";
+
+  if (!problem) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div
@@ -282,19 +307,19 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
                     className="w-8 h-8 rounded-[8px] flex items-center justify-center font-bold text-[14px]"
                     style={{ backgroundColor: darkMode ? "#1A2E4B" : "#E8F0FE", color: "#3A7CF5" }}
                   >
-                    B
+                    {problem.problem_code}
                   </span>
                   <h1 style={{ fontFamily: "'DM Sans', sans-serif", color: textColor }} className="text-[20px] font-bold tracking-[-0.3px]">
-                    Array Manipulation
+                    {problem.problem_name}
                   </h1>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: darkMode ? "#332200" : "#FFF8E1", color: "#E65100" }}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#FBBC04" }} /> Medium
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#FBBC04" }} /> {problem.difficulty}
                   </span>
-                  <span className="text-[13px] font-bold text-[#3A7CF5]">250 pts</span>
-                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Time: 2.0s</span>
-                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Memory: 256 MB</span>
+                  <span className="text-[13px] font-bold text-[#3A7CF5]">{problem.points} pts</span>
+                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Time: {problem.time_limit}s</span>
+                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Memory: {problem.memory_limit} MB</span>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full flex-shrink-0" style={{ backgroundColor: darkMode ? "#331111" : "#FFEBEE", border: "1px solid #FFCDD2" }}>
