@@ -91,15 +91,16 @@ CREATE TABLE problems (
     description         TEXT NOT NULL,
     input_format        TEXT NOT NULL,
     output_format       TEXT NOT NULL,
-    memory_limit_mb        INTEGER NOT NULL DEFAULT 256,
+    memory_limit_mb     INTEGER NOT NULL DEFAULT 256,
 
     competition_id      INTEGER NOT NULL,
 
     difficulty          VARCHAR(10) NOT NULL
                         CHECK (difficulty IN ('Easy', 'Medium', 'Hard')),
 
-    duration            INTERVAL NOT NULL
-                        DEFAULT INTERVAL '1 second',
+    time_limit          INTEGER NOT NULL DEFAULT 1000,
+
+    constraints         TEXT,
 
     language            VARCHAR(20) NOT NULL,
 
@@ -115,8 +116,8 @@ CREATE TABLE problems (
     CONSTRAINT uq_problem_name_per_competition
         UNIQUE (competition_id, problem_name),
 
-    CONSTRAINT chk_problem_duration
-        CHECK (duration > INTERVAL '0 seconds'),
+    CONSTRAINT chk_problem_time_limit
+        CHECK (time_limit > 0),
 
     CONSTRAINT chk_memory_limit_mb
         CHECK (memory_limit_mb > 0)
@@ -147,24 +148,40 @@ CREATE TABLE test_cases (
 -- 6. Submissions
 -- =========================================================
 CREATE TABLE submissions (
-    submission_id       INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    team_id             INTEGER NOT NULL,
-    problem_id          INTEGER NOT NULL,
-    status              VARCHAR(20) NOT NULL
-                        CHECK (
-                            status IN (
-                                'Pending',
-                                'Accepted',
-                                'Wrong Answer',
-                                'Time Limit',
-                                'Runtime Error',
-                                'Compile Error'
-                            )
-                        ),
-    execution_time      INTERVAL,
-    submitted_at        TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    language            VARCHAR(20) NOT NULL,
-    source_code         TEXT NOT NULL,
+    submission_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    team_id INTEGER NOT NULL,
+    problem_id INTEGER NOT NULL,
+
+    status VARCHAR(30) NOT NULL
+    CHECK (
+        status IN (
+            'Pending',
+            'Processing',
+            'Accepted',
+            'Wrong Answer',
+            'Time Limit',
+            'Runtime Error',
+            'Compile Error',
+            'Internal Error'
+        )
+    ),
+
+    language VARCHAR(50) NOT NULL,
+    source_code TEXT NOT NULL,
+
+    judge0_token VARCHAR(255),
+
+    execution_time INTERVAL,
+
+    memory_used_kb INTEGER
+    CHECK (
+        memory_used_kb IS NULL
+        OR memory_used_kb >= 0
+    ),
+
+    submitted_at TIMESTAMP WITH TIME ZONE
+    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_submissions_team
         FOREIGN KEY (team_id)
@@ -179,7 +196,10 @@ CREATE TABLE submissions (
         ON DELETE CASCADE,
 
     CONSTRAINT chk_execution_time
-        CHECK (execution_time IS NULL OR execution_time >= INTERVAL '0 seconds')
+        CHECK (
+            execution_time IS NULL
+            OR execution_time >= INTERVAL '0 seconds'
+        )
 );
 
 -- =========================================================

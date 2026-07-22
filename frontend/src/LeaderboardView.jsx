@@ -183,70 +183,7 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
 
   return (
     <div className="flex flex-col" style={{ width: "100%", height: "100vh", backgroundColor: bgStyle, fontFamily: "'Roboto', sans-serif", overflow: "hidden" }}>
-      {/* ── Top Navigation Bar ── */}
-      <nav className="flex-shrink-0 flex items-center px-8" style={{ height: "64px", backgroundColor: navBg, borderBottom: `1px solid ${borderColor}` }}>
-        <GDGLogo darkMode={darkMode} />
-        
-        <div className="flex items-center gap-1 ml-10">
-          <button
-            onClick={() => navigate("/")}
-            className="px-4 py-2 rounded-[8px] text-[14px]"
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              color: darkMode ? "#AAAAAA" : "#5F6368",
-              backgroundColor: "transparent",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Problems
-          </button>
-          
-          <button
-            onClick={() => navigate("/leaderboard")}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-[8px] text-[14px] font-semibold"
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              color: "#3A7CF5",
-              backgroundColor: darkMode ? "#1A2E4B" : "#E8F0FE",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Leaderboard
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#3A7CF5", color: "white" }}>
-              Active
-            </span>
-          </button>
-        </div>
-
-        <div className="ml-auto flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold" style={{ backgroundColor: "#4285F4" }}>CK</div>
-            <span className="text-[14px] font-medium" style={{ color: darkMode ? "#E0E0E0" : "#3C4043" }}>Code_Knights</span>
-          </div>
-
-          <div className="w-px h-5" style={{ backgroundColor: borderColor }} />
-
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-[8px]" style={{ backgroundColor: darkMode ? "#2A1B0E" : "#FFF3E0", border: "1px solid #FFB74D" }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#E65100" strokeWidth="1.4" /><path d="M7 4V7L9 9" stroke="#E65100" strokeWidth="1.4" strokeLinecap="round" /></svg>
-            <span className="text-[14px] font-bold tabular-nums" style={{ color: "#E65100", letterSpacing: "0.5px" }}>02:45:12</span>
-          </div>
-
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors duration-150"
-            style={{ border: `1px solid ${borderColor}`, backgroundColor: darkMode ? "#2A2A2A" : "transparent", cursor: "pointer" }}
-            aria-label="Toggle dark mode"
-          >
-            {darkMode ? (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="#FBBC04" strokeWidth="1.5" /><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06" stroke="#FBBC04" strokeWidth="1.5" strokeLinecap="round" /></svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7Z" stroke="#5F6368" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            )}
-          </button>
-        </div>
-      </nav>
+      
 
       {/* ── Page Content ── */}
       <div className="flex-1 overflow-y-auto px-10 py-8 flex flex-col gap-7" style={{ scrollbarWidth: "none" }}>

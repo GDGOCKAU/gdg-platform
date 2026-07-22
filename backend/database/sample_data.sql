@@ -67,7 +67,8 @@ INSERT INTO problems
     memory_limit_mb,
     competition_id,
     difficulty,
-    duration,
+    time_limit,
+    constraints,
     language,
     points_assigned
 )
@@ -80,7 +81,8 @@ VALUES
     256,
     1,
     'Easy',
-    INTERVAL '1 second',
+    1000,
+    '1 ≤ A, B ≤ 10^9',
     'Any',
     100
 ),
@@ -92,7 +94,8 @@ VALUES
     256,
     1,
     'Easy',
-    INTERVAL '1 second',
+    1000,
+    '1 ≤ |S| ≤ 10^5',
     'Any',
     150
 ),
@@ -104,7 +107,10 @@ VALUES
     512,
     1,
     'Hard',
-    INTERVAL '2 seconds',
+    2000,
+    '1 ≤ N ≤ 10^5
+1 ≤ M ≤ 2×10^5
+1 ≤ edge weight ≤ 10^9',
     'Any',
     500
 ),
@@ -116,7 +122,8 @@ VALUES
     256,
     2,
     'Medium',
-    INTERVAL '2 seconds',
+    2000,
+    'At least one team may exist.',
     'SQL',
     250
 );

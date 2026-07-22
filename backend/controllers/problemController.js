@@ -1,5 +1,36 @@
 const pool = require("../config/database");
 
+const getProblems = async (req, res) => {
+  try {
+    const query = `
+        SELECT
+          problem_id,
+          problem_name,
+          difficulty,
+          points_assigned AS points,
+          ROW_NUMBER() OVER (
+            ORDER BY problem_id
+          ) AS problem_order
+        FROM problems
+        ORDER BY problem_id
+      `;
+
+    const result = await pool.query(query);
+
+    const problems = result.rows.map((problem) => ({
+      ...problem,
+      problem_code: String.fromCharCode(
+        64 + Number(problem.problem_order)
+      ),
+    }));
+
+    res.status(200).json(problems);
+  } catch (error) {
+    console.error("Get problems error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const getProblemById = async (req, res) => {
   try {
     const problemId = Number(req.params.problemId);
@@ -14,10 +45,14 @@ const getProblemById = async (req, res) => {
       SELECT
         p.problem_id,
         p.problem_name,
-        p.difficulty,
         p.description,
+        p.input_format,
+        p.output_format,
+        p.memory_limit_mb,
+        p.constraints,
+        p.difficulty,
         p.points_assigned AS points,
-        EXTRACT(EPOCH FROM p.duration) AS time_limit_seconds,
+        p.time_limit,
 
         ROW_NUMBER() OVER (
           PARTITION BY p.competition_id
@@ -30,20 +65,33 @@ const getProblemById = async (req, res) => {
         FROM problems
         WHERE problem_id = $1
       )
-    `;
-
+`;
+    
     const result = await pool.query(query, [problemId]);
-
+    
     const problem = result.rows.find(
       (row) => Number(row.problem_id) === problemId
     );
-
+    
     if (!problem) {
       return res.status(404).json({
         message: "Problem not found",
       });
     }
-
+    
+    const testCasesQuery = `
+    SELECT
+    test_id,
+    input_data,
+    expected_output
+    FROM test_cases
+    WHERE problem_id = $1
+    AND is_hidden = FALSE
+    ORDER BY test_id
+    `;
+    
+    const testCasesResult = await pool.query(testCasesQuery, [problemId]);
+    
     const problemCode = String.fromCharCode(
       64 + Number(problem.problem_order)
     );
@@ -53,9 +101,15 @@ const getProblemById = async (req, res) => {
       problem_code: problemCode,
       problem_name: problem.problem_name,
       description: problem.description,
+      input_format: problem.input_format,
+      output_format: problem.output_format,
+      memory_limit_mb: problem.memory_limit_mb,
       difficulty: problem.difficulty,
       points: problem.points,
-      time_limit_seconds: Number(problem.time_limit_seconds),
+      time_limit: problem.time_limit,
+      constraints: problem.constraints,
+
+      sample_test_cases: testCasesResult.rows,
     });
   } catch (error) {
     console.error("Get problem error:", error);
@@ -67,5 +121,5 @@ const getProblemById = async (req, res) => {
 };
 
 module.exports = {
-  getProblemById,
+  getProblemById, getProblems
 };

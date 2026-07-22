@@ -66,8 +66,12 @@ app.get("/api/test-db", async (req, res) => {
 // =======================================================
 // =================== Problem Page ======================
 const problemRoutes = require("./routes/problemRoutes");
+const submissionRoutes = require("./routes/submissionRoutes");
 
 app.use("/api/problems", problemRoutes);
+app.use("/api/submissions", submissionRoutes);
+
+
 // =======================================================
 
 

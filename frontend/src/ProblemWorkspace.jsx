@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import gdgLogoImg from "./assets/gdg-logo.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import Editor from "@monaco-editor/react";
 
 function GDGLogo({ darkMode }) {
   return (
@@ -154,10 +155,22 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
   const [language, setLanguage] = useState("Python 3");
   const [consoleOpen, setConsoleOpen] = useState(true);
   const [runState, setRunState] = useState("idle");
-
+  
   const [problem, setProblem] = useState(null);
-
+  
+  const [sourceCode, setSourceCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const navigate = useNavigate();
+  const { problemId } = useParams();
+
+  const languageMap = {
+    "Python 3": "python",
+    "C++17": "cpp",
+    "Java 17": "java",
+    C: "c",
+    Kotlin: "kotlin",
+  };
 
   const handleRun = () => {
     setRunState("running");
@@ -169,7 +182,7 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
     const fetchProblem = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/problems/1"
+          `http://localhost:5000/api/problems/${problemId}`
         );
 
         const data = await response.json();
@@ -181,7 +194,7 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
     };
 
     fetchProblem();
-  }, []);
+  }, [problemId]);
 
   const navBg = darkMode ? "#1E1E1E" : "#FFFFFF";
   const leftPanelBg = darkMode ? "#181818" : "#FFFFFF";
@@ -199,96 +212,7 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
       className="flex flex-col transition-colors duration-200"
       style={{ width: "100%", height: "100vh", backgroundColor: darkMode ? "#121212" : "#F8F9FA", fontFamily: "'Roboto', sans-serif", overflow: "hidden" }}
     >
-      {/* ── Top Nav Bar ── */}
-      <nav
-        className="flex-shrink-0 flex items-center px-8"
-        style={{ height: "64px", backgroundColor: navBg, borderBottom: `1px solid ${borderColor}`, zIndex: 10 }}
-      >
-        <GDGLogo darkMode={darkMode} />
 
-        {/* Clean Navigation Buttons with Active Indicator */}
-        <div className="flex items-center gap-1 ml-10">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-[8px] text-[14px] font-semibold transition-all duration-150"
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              color: "#3A7CF5",
-              backgroundColor: darkMode ? "#1A2E4B" : "#E8F0FE",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Problems
-            <span
-              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-              style={{ backgroundColor: "#3A7CF5", color: "white" }}
-            >
-              Active
-            </span>
-          </button>
-
-          <button
-            onClick={() => navigate("/leaderboard")}
-            className="px-4 py-2 rounded-[8px] text-[14px] transition-all duration-150"
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              color: darkMode ? "#AAAAAA" : "#5F6368",
-              backgroundColor: "transparent",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Leaderboard
-          </button>
-        </div>
-
-        <div className="ml-auto flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold" style={{ backgroundColor: "#4285F4" }}>
-              CK
-            </div>
-            <span className="text-[14px] font-medium" style={{ color: darkMode ? "#E0E0E0" : "#3C4043" }}>
-              Code_Knights
-            </span>
-          </div>
-
-          <div className="w-px h-5" style={{ backgroundColor: borderColor }} />
-
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-[8px]" style={{ backgroundColor: darkMode ? "#2A1B0E" : "#FFF3E0", border: "1px solid #FFB74D" }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="6" stroke="#E65100" strokeWidth="1.4" />
-              <path d="M7 4V7L9 9" stroke="#E65100" strokeWidth="1.4" strokeLinecap="round" />
-            </svg>
-            <span className="text-[14px] font-bold tabular-nums" style={{ color: "#E65100", letterSpacing: "0.5px" }}>
-              01:15:42
-            </span>
-          </div>
-
-          {/* Dark Mode Toggle Button */}
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors duration-150"
-            style={{ 
-              border: `1px solid ${borderColor}`, 
-              backgroundColor: darkMode ? "#2A2A2A" : "transparent", 
-              cursor: "pointer" 
-            }}
-            aria-label="Toggle dark mode"
-          >
-            {darkMode ? (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="8" r="3" stroke="#FBBC04" strokeWidth="1.5" />
-                <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06" stroke="#FBBC04" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7Z" stroke="#5F6368" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </button>
-        </div>
-      </nav>
 
       {/* ── Main Workspace ── */}
       <div className="flex-1 flex overflow-hidden" style={{ minHeight: 0 }}>
@@ -318,8 +242,8 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#FBBC04" }} /> {problem.difficulty}
                   </span>
                   <span className="text-[13px] font-bold text-[#3A7CF5]">{problem.points} pts</span>
-                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Time: {problem.time_limit_seconds}s</span>
-                  {/*<span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Memory: {256} MB</span> {/* Must change the database */}
+                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Time: {(problem.time_limit / 1000).toFixed(1)}s</span>
+                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}> Memory: {problem.memory_limit_mb} MB</span>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full flex-shrink-0" style={{ backgroundColor: darkMode ? "#331111" : "#FFEBEE", border: "1px solid #FFCDD2" }}>
@@ -350,20 +274,14 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
             <section className="flex flex-col gap-5">
               <div>
                 <h2 style={{ fontFamily: "'DM Sans', sans-serif", color: textColor }} className="text-[14px] font-bold mb-2">Input Format</h2>
-                <ul className="flex flex-col gap-1.5 pl-4" style={{ listStyleType: "disc" }}>
-                  {[
-                    "First line: two integers N and Q (1 ≤ N, Q ≤ 10⁵)",
-                    "Second line: N space-separated integers Aᵢ (−10⁹ ≤ Aᵢ ≤ 10⁹)",
-                    "Next Q lines: two integers L and R per query (1 ≤ L ≤ R ≤ N)",
-                  ].map((s, i) => (
-                    <li key={i} className="text-[13.5px] leading-relaxed" style={{ color: subTextColor }}>{s}</li>
-                  ))}
-                </ul>
+                <p className="text-[13.5px] leading-relaxed whitespace-pre-line" style={{ color: subTextColor }} >
+                  {problem.input_format}
+                </p>
               </div>
               <div>
                 <h2 style={{ fontFamily: "'DM Sans', sans-serif", color: textColor }} className="text-[14px] font-bold mb-2">Output Format</h2>
-                <p className="text-[13.5px] leading-relaxed" style={{ color: subTextColor }}>
-                  Print Q lines. For each query, output a single integer — the sum of <code className="px-1 py-0.5 rounded text-[12px]" style={{ backgroundColor: inlineCodeBg, color: "#EA4335", fontFamily: "'JetBrains Mono', monospace" }}>A[L..R]</code>.
+                <p className="text-[13.5px] leading-relaxed whitespace-pre-line" style={{ color: subTextColor }} >
+                  {problem.output_format}
                 </p>
               </div>
             </section>
@@ -373,34 +291,62 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
             {/* Sample test cases */}
             <section>
               <h2 style={{ fontFamily: "'DM Sans', sans-serif", color: textColor }} className="text-[14px] font-bold mb-4">Sample Test Cases</h2>
-              <div className="flex flex-col gap-4">
-                <div>
-                  <div className="text-[11px] font-semibold mb-2 uppercase tracking-wider" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Example 1</div>
-                  <div className="flex gap-3">
-                    <SampleBlock label="Input" content={"5 3\n1 2 3 4 5\n1 3\n2 5\n1 5"} darkMode={darkMode} />
-                    <SampleBlock label="Output" content={"6\n14\n15"} darkMode={darkMode} />
-                  </div>
+
+
+              {problem.sample_test_cases.length > 0 ? (
+                <div className="flex flex-col gap-4">
+                  {problem.sample_test_cases.map((testCase, index) => (
+                    <div key={testCase.test_id}>
+                      <div className="text-[11px] font-semibold mb-2 uppercase tracking-wider" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }} >
+                        Example {index + 1}
+                      </div>
+
+                      <div className="flex gap-3">
+                        <SampleBlock label="Input" content={testCase.input_data} darkMode={darkMode} />
+                        <SampleBlock label="Output" content={testCase.expected_output} darkMode={darkMode} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <div className="text-[11px] font-semibold mb-2 uppercase tracking-wider" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Example 2</div>
-                  <div className="flex gap-3">
-                    <SampleBlock label="Input" content={"4 2\n-1 3 -2 5\n1 4\n2 3"} darkMode={darkMode} />
-                    <SampleBlock label="Output" content={"5\n1"} darkMode={darkMode} />
-                  </div>
-                </div>
-              </div>
+              ) : (
+                <p className="text-[13px]" style={{ color: subTextColor }} >
+                  No sample test cases available.
+                </p>
+              )}
             </section>
 
             {/* Constraints */}
             <section>
-              <h2 style={{ fontFamily: "'DM Sans', sans-serif", color: textColor }} className="text-[14px] font-bold mb-3">Constraints</h2>
-              <div className="flex flex-col gap-2 p-4 rounded-[10px]" style={{ backgroundColor: darkMode ? "#2A2A2A" : "#F8F9FA", border: `1px solid ${borderColor}` }}>
-                {["1 ≤ N, Q ≤ 10⁵", "−10⁹ ≤ Aᵢ ≤ 10⁹", "1 ≤ L ≤ R ≤ N", "Time Limit: 2.0 seconds", "Memory Limit: 256 MB"].map((c, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#4285F4" }} />
-                    <code className="text-[13px]" style={{ color: subTextColor, fontFamily: "'JetBrains Mono', monospace" }}>{c}</code>
-                  </div>
-                ))}
+              <h2 style={{fontFamily: "'DM Sans', sans-serif", color: textColor, }} className="text-[14px] font-bold mb-3" >
+                Constraints
+              </h2>
+
+              <div className="flex flex-col gap-2 p-4 rounded-[10px]" style={{ backgroundColor: darkMode ? "#2A2A2A" : "#F8F9FA", border: `1px solid ${borderColor}`,}} >
+                {problem.constraints ?.split("\n").filter((constraint) => constraint.trim() !== "").map((constraint, index) => (
+                    <div key={index} className="flex items-center gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#4285F4" }}/>
+
+                      <code className="text-[13px]" style={{ color: subTextColor, fontFamily: "'JetBrains Mono', monospace",}} >
+                        {constraint}
+                      </code>
+                    </div>
+                  ))}
+
+                <div className="flex items-center gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#4285F4" }}/>
+
+                  <code className="text-[13px]" style={{ color: subTextColor, fontFamily: "'JetBrains Mono', monospace",}}>
+                    Time Limit: {problem.time_limit / 1000} seconds
+                  </code>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#4285F4" }}/>
+
+                  <code className="text-[13px]" style={{ color: subTextColor, fontFamily: "'JetBrains Mono', monospace",}}>
+                    Memory Limit: {problem.memory_limit_mb} MB
+                  </code>
+                </div>
               </div>
             </section>
 
@@ -459,7 +405,22 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
             </button>
           </div>
 
-          <CodeEditor />
+          <Editor
+            height="100%"
+            theme="vs-dark"
+            language={languageMap[language]}
+            value={sourceCode}
+            onChange={(value) =>
+              setSourceCode(value || "")
+            }
+            options={{
+              fontSize: 14,
+              minimap: {
+                enabled: false,
+              },
+              automaticLayout: true,
+            }}
+          />
 
           {/* Console drawer */}
           <div
