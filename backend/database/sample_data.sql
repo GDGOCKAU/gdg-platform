@@ -1,3 +1,4 @@
+
 -- =========================================================
 -- GDG Programming Contest Platform
 -- Sample Data
@@ -58,44 +59,67 @@ VALUES
 -- Problems
 -- =========================================================
 INSERT INTO problems
-    (problem_name, description, competition_id, difficulty, duration, language, points_assigned)
+(
+    problem_name,
+    description,
+    input_format,
+    output_format,
+    memory_limit_mb,
+    competition_id,
+    difficulty,
+    duration,
+    language,
+    points_assigned
+)
 VALUES
-    (
-        'Two Sum',
-        'Given two integers, print their sum.',
-        1,
-        'Easy',
-        INTERVAL '1 second',
-        'Any',
-        100
-    ),
-    (
-        'Palindrome Check',
-        'Given a string, print YES if it is a palindrome; otherwise print NO.',
-        1,
-        'Easy',
-        INTERVAL '1 second',
-        'Any',
-        150
-    ),
-    (
-        'Shortest Path',
-        'Find the shortest distance from node 1 to node N in a weighted graph.',
-        1,
-        'Hard',
-        INTERVAL '2 seconds',
-        'Any',
-        500
-    ),
-    (
-        'SQL Team Count',
-        'Return the number of teams registered in a competition.',
-        2,
-        'Medium',
-        INTERVAL '2 seconds',
-        'SQL',
-        250
-    );
+(
+    'Two Sum',
+    'Given two integers, print their sum.',
+    'The input contains two integers A and B.',
+    'Print a single integer representing A + B.',
+    256,
+    1,
+    'Easy',
+    INTERVAL '1 second',
+    'Any',
+    100
+),
+(
+    'Palindrome Check',
+    'Given a string, print YES if it is a palindrome; otherwise print NO.',
+    'A single string S.',
+    'Print YES if S is a palindrome, otherwise print NO.',
+    256,
+    1,
+    'Easy',
+    INTERVAL '1 second',
+    'Any',
+    150
+),
+(
+    'Shortest Path',
+    'Find the shortest distance from node 1 to node N in a weighted graph.',
+    'The first line contains N and M, followed by M weighted edges.',
+    'Print the shortest distance from node 1 to node N.',
+    512,
+    1,
+    'Hard',
+    INTERVAL '2 seconds',
+    'Any',
+    500
+),
+(
+    'SQL Team Count',
+    'Return the number of teams registered in a competition.',
+    'No input.',
+    'Return a single row containing the total number of teams.',
+    256,
+    2,
+    'Medium',
+    INTERVAL '2 seconds',
+    'SQL',
+    250
+);
 
 -- =========================================================
 -- Test Cases
@@ -126,8 +150,17 @@ VALUES
 -- =========================================================
 -- Submissions
 -- =========================================================
+
 INSERT INTO submissions
-    (team_id, problem_id, status, execution_time, submitted_at, language, source_code)
+    (
+        team_id,
+        problem_id,
+        status,
+        execution_time,
+        submitted_at,
+        language,
+        source_code
+    )
 VALUES
     (
         1,
@@ -136,8 +169,10 @@ VALUES
         INTERVAL '0.021 seconds',
         '2026-07-21 18:15:00+03',
         'Python',
-        E'a, b = map(int, input().split())\nprint(a + b)'
+        $$a, b = map(int, input().split())
+print(a + b)$$
     ),
+
     (
         1,
         2,
@@ -145,8 +180,22 @@ VALUES
         INTERVAL '0.030 seconds',
         '2026-07-21 18:27:00+03',
         'Java',
-        E'import java.util.*;\nclass Main {\n  public static void main(String[] args) {\n    Scanner sc = new Scanner(System.in);\n    String s = sc.next();\n    System.out.println(s.equals(new StringBuilder(s).reverse().toString()) ? "YES" : "NO");\n  }\n}'
+        $$import java.util.*;
+
+class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        String s = sc.next();
+
+        System.out.println(
+            s.equals(new StringBuilder(s).reverse().toString())
+            ? "YES"
+            : "NO"
+        );
+    }
+}$$
     ),
+
     (
         2,
         1,
@@ -154,8 +203,16 @@ VALUES
         INTERVAL '0.018 seconds',
         '2026-07-21 18:20:00+03',
         'C++',
-        E'#include <iostream>\nusing namespace std;\nint main(){int a,b;cin>>a>>b;cout<<a-b;}'
+        $$#include <iostream>
+using namespace std;
+
+int main() {
+    int a, b;
+    cin >> a >> b;
+    cout << a - b;
+}$$
     ),
+
     (
         2,
         1,
@@ -163,8 +220,16 @@ VALUES
         INTERVAL '0.012 seconds',
         '2026-07-21 18:24:00+03',
         'C++',
-        E'#include <iostream>\nusing namespace std;\nint main(){long long a,b;cin>>a>>b;cout<<a+b;}'
+        $$#include <iostream>
+using namespace std;
+
+int main() {
+    long long a, b;
+    cin >> a >> b;
+    cout << a + b;
+}$$
     ),
+
     (
         3,
         3,
@@ -172,8 +237,10 @@ VALUES
         INTERVAL '2.001 seconds',
         '2026-07-21 19:05:00+03',
         'Python',
-        E'# Initial brute-force attempt\nprint("TLE")'
+        $$# Initial brute-force attempt
+print("TLE")$$
     ),
+
     (
         4,
         4,
@@ -181,7 +248,9 @@ VALUES
         NULL,
         '2026-08-01 17:10:00+03',
         'SQL',
-        'SELECT COUNT(*) FROM teams WHERE competition_id = 1;'
+        $$SELECT COUNT(*)
+FROM teams
+WHERE competition_id = 1;$$
     );
 
 -- =========================================================

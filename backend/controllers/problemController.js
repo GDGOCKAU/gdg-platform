@@ -15,6 +15,7 @@ const getProblemById = async (req, res) => {
         p.problem_id,
         p.problem_name,
         p.difficulty,
+        p.description,
         p.points_assigned AS points,
         EXTRACT(EPOCH FROM p.duration) AS time_limit_seconds,
 
@@ -51,6 +52,7 @@ const getProblemById = async (req, res) => {
       problem_id: problem.problem_id,
       problem_code: problemCode,
       problem_name: problem.problem_name,
+      description: problem.description,
       difficulty: problem.difficulty,
       points: problem.points,
       time_limit_seconds: Number(problem.time_limit_seconds),

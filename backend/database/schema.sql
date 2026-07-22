@@ -89,12 +89,22 @@ CREATE TABLE problems (
     problem_id          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     problem_name        VARCHAR(100) NOT NULL,
     description         TEXT NOT NULL,
+    input_format        TEXT NOT NULL,
+    output_format       TEXT NOT NULL,
+    memory_limit_mb        INTEGER NOT NULL DEFAULT 256,
+
     competition_id      INTEGER NOT NULL,
+
     difficulty          VARCHAR(10) NOT NULL
                         CHECK (difficulty IN ('Easy', 'Medium', 'Hard')),
-    duration            INTERVAL NOT NULL DEFAULT INTERVAL '1 second',
+
+    duration            INTERVAL NOT NULL
+                        DEFAULT INTERVAL '1 second',
+
     language            VARCHAR(20) NOT NULL,
-    points_assigned     DOUBLE PRECISION NOT NULL CHECK (points_assigned >= 0),
+
+    points_assigned     DOUBLE PRECISION NOT NULL
+                        CHECK (points_assigned >= 0),
 
     CONSTRAINT fk_problems_competition
         FOREIGN KEY (competition_id)
@@ -106,7 +116,10 @@ CREATE TABLE problems (
         UNIQUE (competition_id, problem_name),
 
     CONSTRAINT chk_problem_duration
-        CHECK (duration > INTERVAL '0 seconds')
+        CHECK (duration > INTERVAL '0 seconds'),
+
+    CONSTRAINT chk_memory_limit_mb
+        CHECK (memory_limit_mb > 0)
 );
 
 -- =========================================================

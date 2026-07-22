@@ -318,8 +318,8 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#FBBC04" }} /> {problem.difficulty}
                   </span>
                   <span className="text-[13px] font-bold text-[#3A7CF5]">{problem.points} pts</span>
-                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Time: {problem.time_limit}s</span>
-                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Memory: {problem.memory_limit} MB</span>
+                  <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Time: {problem.time_limit_seconds}s</span>
+                  {/*<span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}>Memory: {256} MB</span> {/* Must change the database */}
                 </div>
               </div>
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full flex-shrink-0" style={{ backgroundColor: darkMode ? "#331111" : "#FFEBEE", border: "1px solid #FFCDD2" }}>
@@ -340,10 +340,7 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
                 Problem Statement
               </h2>
               <p className="text-[14px] leading-[1.75]" style={{ color: subTextColor }}>
-                You are given an array <code className="px-1.5 py-0.5 rounded text-[13px]" style={{ backgroundColor: inlineCodeBg, color: "#EA4335", fontFamily: "'JetBrains Mono', monospace" }}>A</code> of <code className="px-1.5 py-0.5 rounded text-[13px]" style={{ backgroundColor: inlineCodeBg, color: "#EA4335", fontFamily: "'JetBrains Mono', monospace" }}>N</code> integers and <code className="px-1.5 py-0.5 rounded text-[13px]" style={{ backgroundColor: inlineCodeBg, color: "#EA4335", fontFamily: "'JetBrains Mono', monospace" }}>Q</code> queries. For each query, you will receive two integers <code className="px-1.5 py-0.5 rounded text-[13px]" style={{ backgroundColor: inlineCodeBg, color: "#EA4335", fontFamily: "'JetBrains Mono', monospace" }}>L</code> and <code className="px-1.5 py-0.5 rounded text-[13px]" style={{ backgroundColor: inlineCodeBg, color: "#EA4335", fontFamily: "'JetBrains Mono', monospace" }}>R</code>, and you must output the sum of elements in the subarray from index <code className="px-1.5 py-0.5 rounded text-[13px]" style={{ backgroundColor: inlineCodeBg, color: "#EA4335", fontFamily: "'JetBrains Mono', monospace" }}>L</code> to <code className="px-1.5 py-0.5 rounded text-[13px]" style={{ backgroundColor: inlineCodeBg, color: "#EA4335", fontFamily: "'JetBrains Mono', monospace" }}>R</code> (1-indexed, inclusive).
-              </p>
-              <p className="text-[14px] leading-[1.75] mt-3" style={{ color: subTextColor }}>
-                Your solution must handle up to <strong>10<sup>5</sup></strong> queries efficiently. A naive O(N×Q) approach will exceed the time limit.
+                 {problem.description}
               </p>
             </section>
 
