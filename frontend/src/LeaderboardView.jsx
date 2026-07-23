@@ -182,7 +182,7 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
   };
 
   return (
-    <div className="flex flex-col" style={{ width: "100%", height: "100vh", backgroundColor: bgStyle, fontFamily: "'Roboto', sans-serif", overflow: "hidden" }}>
+    <div className="flex flex-col" style={{ width: "100%", height: "100%", backgroundColor: bgStyle, fontFamily: "'Roboto', sans-serif", overflow: "hidden" }}>
       
 
       {/* ── Page Content ── */}

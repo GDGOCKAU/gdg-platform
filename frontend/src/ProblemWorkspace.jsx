@@ -153,17 +153,16 @@ const LANGUAGES = ["Python 3", "C++17", "Java 17", "C", "Kotlin"];
 
 export default function ProblemWorkspace({ darkMode, setDarkMode }) {
   const [language, setLanguage] = useState("Python 3");
-  const [consoleOpen, setConsoleOpen] = useState(true);
+  const [consoleOpen, setConsoleOpen] = useState(false);
   const [runState, setRunState] = useState("idle");
   
   const [problem, setProblem] = useState(null);
   
-  const [sourceCode, setSourceCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const navigate = useNavigate();
   const { problemId } = useParams();
-
+  
   const languageMap = {
     "Python 3": "python",
     "C++17": "cpp",
@@ -171,11 +170,147 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
     C: "c",
     Kotlin: "kotlin",
   };
+  const submissionLanguageMap = {
+    "Python 3": "Python",
+    "C++17": "C++",
+    "Java 17": "Java",
+    C: "C",
+    Kotlin: "Kotlin",
+  };
+  
+  const DEFAULT_TEMPLATES = {
+"Python 3": `def solve():
+  pass
+
+
+if __name__ == "__main__":
+  solve()
+`,
+
+"C++17": `#include <iostream>
+using namespace std;
+
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+  
+  return 0;
+  }
+  `,
+  
+  "Java 17": `import java.util.*;
+  
+public class Main {
+  public static void main(String[] args) {
+    Scanner input = new Scanner(System.in);
+    
+  }
+}
+      `,
+      
+      C: `#include <stdio.h>
+      
+      int main() {
+        
+      return 0;
+      }
+      `,
+      
+      Kotlin: `fun main() {
+        
+      }
+      `,
+};
+
+  const [sourceCode, setSourceCode] = useState(DEFAULT_TEMPLATES[language]);
 
   const handleRun = () => {
     setRunState("running");
     setConsoleOpen(true);
     setTimeout(() => setRunState("done"), 1800);
+  };
+
+  const handleSubmit = async () => {
+    if (!sourceCode.trim()) {
+      alert("Please write your solution before submitting.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const response = await fetch(
+        "http://localhost:5000/api/submissions",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            team_id: 1,
+            problem_id: Number(problemId),
+            language: submissionLanguageMap[language],
+            source_code: sourceCode,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to submit solution"
+        );
+      }
+
+      console.log("Submission created:", data);
+
+      alert(
+        `Submission created successfully. Status: ${data.submission.status}`
+      );
+    } catch (error) {
+      console.error(
+        "Submit solution error:",
+        error
+      );
+
+      alert(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetCode = () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to clear your code?"
+    );
+
+    if (!confirmed) return;
+
+    setSourceCode(DEFAULT_TEMPLATES[language]);
+  };
+
+  const handleLanguageChange = (event) => {
+    const newLanguage = event.target.value;
+
+    if (
+      sourceCode !== DEFAULT_TEMPLATES[language]
+    ) {
+      const confirmed = window.confirm(
+        "Changing the language will replace your current code. Continue?"
+      );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    setLanguage(newLanguage);
+    setSourceCode(
+      DEFAULT_TEMPLATES[newLanguage]
+    );
   };
 
   useEffect(() => {
@@ -210,17 +345,17 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
   return (
     <div
       className="flex flex-col transition-colors duration-200"
-      style={{ width: "100%", height: "100vh", backgroundColor: darkMode ? "#121212" : "#F8F9FA", fontFamily: "'Roboto', sans-serif", overflow: "hidden" }}
+      style={{ width: "100%", height: "100%", minHeight: 0, backgroundColor: darkMode ? "#121212" : "#F8F9FA", fontFamily: "'Roboto', sans-serif", overflow: "hidden" }}
     >
 
 
       {/* ── Main Workspace ── */}
-      <div className="flex-1 flex overflow-hidden" style={{ minHeight: 0 }}>
+      <div className="flex-1 flex overflow-hidden" style={{ minHeight: 0, height: "100%",}}>
 
-        {/* ── Left: Problem Description (40%) ── */}
+        {/* ── Left: Problem Description (55%) ── */}
         <div
           className="flex flex-col overflow-y-auto transition-colors duration-200"
-          style={{ width: "40%", minWidth: "40%", backgroundColor: leftPanelBg, borderRight: `1px solid ${borderColor}`, scrollbarWidth: "none" }}
+          style={{ width: "55%", minWidth: "55%", backgroundColor: leftPanelBg, borderRight: `1px solid ${borderColor}`, scrollbarWidth: "none" }}
         >
           {/* Problem header */}
           <div className="px-8 pt-8 pb-6 flex-shrink-0" style={{ borderBottom: `1px solid ${borderColor}` }}>
@@ -354,8 +489,8 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
           </div>
         </div>
 
-        {/* ── Right: Code Editor (60%) ── */}
-        <div className="flex flex-col" style={{ width: "60%", minWidth: "60%", backgroundColor: "#1E1E1E" }}>
+        {/* ── Right: Code Editor (45%) ── */}
+        <div className="flex flex-col" style={{ width: "45%", minWidth: "45%", height: "100%", minHeight: 0, backgroundColor: "#1E1E1E" }}>
           {/* Editor control bar */}
           <div
             className="flex-shrink-0 flex items-center justify-between px-5"
@@ -365,7 +500,7 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
               <div className="relative flex items-center">
                 <select
                   value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
+                  onChange={handleLanguageChange}
                   className="appearance-none pl-3 pr-8 py-1.5 rounded-[6px] text-[13px] font-medium outline-none transition-colors cursor-pointer"
                   style={{
                     backgroundColor: "#3C3C3C",
@@ -381,19 +516,10 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
                 </svg>
               </div>
 
-              <div
-                className="flex items-center gap-2 px-3 py-1.5 rounded-t-[6px] text-[12px]"
-                style={{ backgroundColor: "#1E1E1E", color: "#D4D4D4", fontFamily: "'JetBrains Mono', monospace", borderTop: "1px solid #3A7CF5", borderLeft: "1px solid #3C3C3C", borderRight: "1px solid #3C3C3C" }}
-              >
-                <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
-                  <path d="M1 1h5l3 3v7H1V1z" stroke="#4EC9B0" strokeWidth="1" />
-                  <path d="M6 1v3h3" stroke="#4EC9B0" strokeWidth="1" />
-                </svg>
-                solution.py
-              </div>
             </div>
 
             <button
+              onClick={handleResetCode}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[12px] transition-colors duration-150 hover:bg-white/10"
               style={{ backgroundColor: "transparent", border: "1px solid #3C3C3C", color: "#858585", fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}
             >
@@ -405,22 +531,24 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
             </button>
           </div>
 
-          <Editor
-            height="100%"
-            theme="vs-dark"
-            language={languageMap[language]}
-            value={sourceCode}
-            onChange={(value) =>
-              setSourceCode(value || "")
-            }
-            options={{
-              fontSize: 14,
-              minimap: {
-                enabled: false,
-              },
-              automaticLayout: true,
-            }}
-          />
+          <div className="flex-1 overflow-hidden" style={{minHeight: 0,}}>
+            <Editor
+              height="100%"
+              theme="vs-dark"
+              language={languageMap[language]}
+              value={sourceCode}
+              onChange={(value) =>
+                setSourceCode(value || "")
+              }
+              options={{
+                fontSize: 14,
+                minimap: {
+                  enabled: false,
+                },
+                automaticLayout: true,
+              }}
+            />
+          </div>
 
           {/* Console drawer */}
           <div
@@ -501,17 +629,20 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
             <button
               className="flex items-center gap-2 px-6 py-2 rounded-[100px] text-[14px] font-semibold text-white transition-all duration-150"
               style={{
-                backgroundColor: "#3A7CF5",
+                backgroundColor: isSubmitting ? "#6D8FCB" : "#3A7CF5",
                 border: "none",
                 fontFamily: "'DM Sans', sans-serif",
-                cursor: "pointer",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                opacity: isSubmitting ? 0.7 : 1,
                 boxShadow: "0px 2px 8px rgba(58,124,245,0.40)",
               }}
+              onClick={handleSubmit}
+              disabled={isSubmitting}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M2 7h10M8 3l4 4-4 4" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              Submit Solution
+              {isSubmitting ? "Submitting..." : "Submit Solution"}
             </button>
           </div>
         </div>

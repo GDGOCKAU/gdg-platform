@@ -159,7 +159,7 @@ export default function Dashboard({ darkMode, setDarkMode }) {
   const cardBg = darkMode ? "#1E1E1E" : "#FFFFFF";
 
   return (
-    <div className="flex flex-col" style={{ width: "100%", height: "100vh", backgroundColor: bgStyle, fontFamily: "'Roboto', sans-serif" }}>
+    <div className="flex flex-col" style={{ width: "100%", height: "100%", backgroundColor: bgStyle, fontFamily: "'Roboto', sans-serif" }}>
 
       {/* Main Grid Content */}
       <div className="flex-1 grid gap-6 px-8 py-7 overflow-hidden" style={{ gridTemplateColumns: "1fr 300px", minHeight: 0 }}>

@@ -67,7 +67,7 @@ const Navbar = ({
 
       <div className="flex items-center gap-1 ml-10">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/dashboard")}
           className={`px-4 py-2 rounded-[8px] text-[14px] transition-all duration-150 ${isProblemsPage ? "font-semibold" : ""}`}
           style={{
             fontFamily: "'DM Sans', sans-serif",

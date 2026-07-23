@@ -8,7 +8,7 @@ const MainLayout = ({
   borderColor,
 }) => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{height: "100vh", overflow: "hidden",}}>
       <Navbar
         darkMode={darkMode}
         setDarkMode={setDarkMode}
@@ -16,7 +16,7 @@ const MainLayout = ({
         borderColor={borderColor}
       />
 
-      <main className="flex-1">
+      <main className="flex-1" style={{minHeight: 0, overflow: "hidden",}}>
         <Outlet />
       </main>
     </div>
