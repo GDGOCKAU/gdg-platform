@@ -2,6 +2,7 @@ const pool = require("../config/database");
 
 const getProblems = async (req, res) => {
   try {
+    const competitionId = req.user.competition_id;
     const query = `
         SELECT
           problem_id,
@@ -10,12 +11,13 @@ const getProblems = async (req, res) => {
           points_assigned AS points,
           ROW_NUMBER() OVER (
             ORDER BY problem_id
-          ) AS problem_order
+            ) AS problem_order
         FROM problems
+        WHERE competition_id = $1
         ORDER BY problem_id
       `;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, [competitionId]);
 
     const problems = result.rows.map((problem) => ({
       ...problem,

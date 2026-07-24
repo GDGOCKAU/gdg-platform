@@ -5,6 +5,7 @@ import Dashboard from "./Dashboard";
 import ProblemWorkspace from "./ProblemWorkspace";
 import LeaderboardView from "./LeaderboardView";
 import MainLayout from "./layouts/MainLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -12,31 +13,34 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Starting Route: Login Page */}
+        {/* Login */}
         <Route path="/" element={<Login />} />
 
-        {/* Competitor Workspace Routes */}
+        {/* Protected Routes */}
         <Route
-          element={<MainLayout darkMode={darkMode} setDarkMode={setDarkMode} />}
+          element={
+            <ProtectedRoute>
+              <MainLayout darkMode={darkMode} setDarkMode={setDarkMode} />
+            </ProtectedRoute>
+          }
         >
-          <Route 
-            path="/dashboard" 
-            element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />} 
+          <Route
+            path="/dashboard"
+            element={<Dashboard darkMode={darkMode} setDarkMode={setDarkMode} />}
           />
 
           <Route
             path="/problems/:problemId"
             element={<ProblemWorkspace darkMode={darkMode} setDarkMode={setDarkMode} />}
           />
-          
-          <Route 
-            path="/leaderboard" 
-            element={<LeaderboardView darkMode={darkMode} setDarkMode={setDarkMode} />} 
+
+          <Route
+            path="/leaderboard"
+            element={<LeaderboardView darkMode={darkMode} setDarkMode={setDarkMode} />}
           />
         </Route>
 
-
-        {/* Fallback to Login */}
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

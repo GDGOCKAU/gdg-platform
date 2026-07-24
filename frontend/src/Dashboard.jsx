@@ -128,7 +128,7 @@ export default function Dashboard({ darkMode, setDarkMode }) {
         setProblemsError("");
 
         const response = await fetch(
-          "http://localhost:5000/api/problems"
+          "http://localhost:5000/api/problems",{credentials: "include",}
         );
 
         const data = await response.json();

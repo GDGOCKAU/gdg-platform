@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import gdgLogoImg from "./assets/gdg-logo.png";
+import { useAuth } from "./context/AuthContext";
 
 function GDGLogo() {
   return (
@@ -44,6 +45,7 @@ export default function Login() {
   const [focusedField, setFocusedField] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   // Handle Form Submission
   const handleLogin = async (e) => {
@@ -76,6 +78,8 @@ export default function Login() {
         return;
     }
 
+    setUser(data.user);
+    navigate("/dashboard"); 
   };
 
   return (

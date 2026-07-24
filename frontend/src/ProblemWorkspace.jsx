@@ -317,7 +317,7 @@ public class Main {
     const fetchProblem = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/problems/${problemId}`
+          `http://localhost:5000/api/problems/${problemId}`,{credentials: "include",}
         );
 
         const data = await response.json();
