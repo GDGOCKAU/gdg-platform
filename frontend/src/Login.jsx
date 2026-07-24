@@ -46,26 +46,36 @@ export default function Login() {
   const navigate = useNavigate();
 
   // Handle Form Submission
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMessage(""); // Reset previous error
 
-    // Example correct credentials (replace with API logic)
-    const validTeam = "123456";
-    const validCode = "123456";
+
 
     if (!teamName.trim() || !accessCode.trim()) {
       setErrorMessage("Please fill in both Team Name and Access Code.");
       return;
     }
 
-    if (teamName === validTeam && accessCode === validCode) {
-      // Valid credentials -> Route to Dashboard!
-      navigate("/dashboard");
-    } else {
-      // Invalid credentials -> Display error message
-      setErrorMessage("The information entered is not correct. Please check your team name or access code.");
+    const response = await fetch("http://localhost:5000/api/auth/login", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        teamName,
+        accessCode,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        setErrorMessage(data.message);
+        return;
     }
+
   };
 
   return (

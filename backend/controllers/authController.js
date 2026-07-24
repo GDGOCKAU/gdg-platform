@@ -1,4 +1,5 @@
 const pool = require("../config/database");
+const { generateToken } = require("../utils/jwt");
 
 const login = async (req, res) => {
   try {
@@ -11,17 +12,15 @@ const login = async (req, res) => {
     }
 
     const query = `
-      SELECT
-        t.team_id,
-        t.team_name,
-        u.role
-      FROM users u
-      INNER JOIN teams t
-        ON u.team_id = t.team_id
-      WHERE LOWER(t.team_name) = LOWER($1)
-        AND u.access_code = $2
-      LIMIT 1
-    `;
+        SELECT
+            team_id,
+            team_name,
+            competition_id
+        FROM teams
+        WHERE LOWER(team_name) = LOWER($1)
+            AND access_code = $2
+        LIMIT 1
+        `;
 
     const result = await pool.query(query, [
       teamName.trim(),
@@ -34,9 +33,29 @@ const login = async (req, res) => {
       });
     }
 
+    const team = result.rows[0];
+
+    const token = generateToken({
+        team_id: team.team_id,
+        competition_id: team.competition_id,
+        role: "Participant",
+        });
+
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 3 * 60 * 60 * 1000,
+    });
+
     return res.status(200).json({
       message: "Login successful",
-      user: result.rows[0],
+      user: {
+        team_id: team.team_id,
+        team_name: team.team_name,
+        competition_id: team.competition_id,
+        role: "Participant",
+      },
     });
   } catch (error) {
     console.error("Login error:", error);
