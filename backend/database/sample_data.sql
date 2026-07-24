@@ -35,25 +35,22 @@ VALUES
 -- =========================================================
 -- Teams
 -- =========================================================
-INSERT INTO teams (team_name, competition_id)
+INSERT INTO teams (team_name, access_code, competition_id)
 VALUES
-    ('Byte Force', 1),
-    ('Code Falcons', 1),
-    ('Null Pointers', 1),
-    ('API Masters', 2);
+    ('Byte Force', '111111', 1),
+    ('Code Falcons', '222222', 1),
+    ('Null Pointers', '333333', 1),
+    ('API Masters', '444444', 2);
 
 -- =========================================================
 -- Users
--- Sample access codes are plain text only for demonstration.
--- In the real backend, store password/access-code hashes.
+-- Admin accounts only.
+-- Access codes are plain text temporarily for development.
+-- In production, store hashed access codes.
 -- =========================================================
-INSERT INTO users (user_name, access_code, team_id, role)
+INSERT INTO users (user_name, access_code, role)
 VALUES
-    ('admin_gdg', '$2b$12$sampleAdminHash', NULL, 'Admin'),
-    ('abdullah',  '$2b$12$sampleTeam1Hash', 1, 'Participant'),
-    ('shahad',    '$2b$12$sampleTeam2Hash', 2, 'Participant'),
-    ('abdulrahman','$2b$12$sampleTeam3Hash', 3, 'Participant'),
-    ('backend_api','$2b$12$sampleTeam4Hash', 4, 'Participant');
+    ('admin_gdg', '999999', 'Admin');
 
 -- =========================================================
 -- Problems

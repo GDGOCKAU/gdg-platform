@@ -40,6 +40,7 @@ CREATE TABLE competitions (
 CREATE TABLE teams (
     team_id             INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     team_name           VARCHAR(50) NOT NULL,
+    access_code         VARCHAR(255) NOT NULL,
     competition_id      INTEGER NOT NULL,
 
     CONSTRAINT fk_teams_competition
@@ -59,27 +60,10 @@ CREATE TABLE teams (
 -- =========================================================
 CREATE TABLE users (
     user_id             INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_name           VARCHAR(50) NOT NULL,
+    user_name           VARCHAR(50) NOT NULL UNIQUE,
     access_code         VARCHAR(255) NOT NULL,
-    team_id             INTEGER,
-    role                VARCHAR(15) NOT NULL DEFAULT 'Participant'
-                        CHECK (role IN ('Admin', 'Participant')),
-
-    CONSTRAINT fk_users_team
-        FOREIGN KEY (team_id)
-        REFERENCES teams (team_id)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE,
-
-    CONSTRAINT uq_user_name
-        UNIQUE (user_name),
-
-    CONSTRAINT chk_admin_team
-        CHECK (
-            (role = 'Admin' AND team_id IS NULL)
-            OR
-            (role = 'Participant' AND team_id IS NOT NULL)
-        )
+    role                VARCHAR(15) NOT NULL DEFAULT 'Admin'
+                        CHECK (role = 'Admin')
 );
 
 -- =========================================================

@@ -286,7 +286,7 @@ public class Main {
     const confirmed = window.confirm(
       "Are you sure you want to clear your code?"
     );
-
+ 
     if (!confirmed) return;
 
     setSourceCode(DEFAULT_TEMPLATES[language]);
