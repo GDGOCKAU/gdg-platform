@@ -1,5 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import gdgLogoImg from "../assets/gdg-logo.png";
+
 
 function GDGLogo({ darkMode }) {
   return (
@@ -31,12 +34,12 @@ function GDGLogo({ darkMode }) {
   );
 }
 
-const Navbar = ({
-  darkMode,
-  setDarkMode,
-}) => {
+const Navbar = ({darkMode, setDarkMode,}) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, competition } = useAuth();
+  const [timeLeft, setTimeLeft] = useState("00:00:00");
+  const [timerStatus, setTimerStatus] = useState("loading");
 
   const navBg = darkMode
     ? "#1E1E1E"
@@ -46,12 +49,88 @@ const Navbar = ({
     ? "#333333"
     : "#E0E0E0";
 
-  const isProblemsPage =
-    location.pathname === "/" ||
-    location.pathname.startsWith("/problems");
+  const isProblemsPage = location.pathname === "/dashboard" || location.pathname.startsWith("/problems");
 
-  const isLeaderboardPage =
-    location.pathname === "/leaderboard";
+  const isLeaderboardPage = location.pathname === "/leaderboard";
+
+  useEffect(() => {
+    if (!competition?.started_at || !competition?.ended_at) {
+      setTimeLeft("00:00:00");
+      setTimerStatus("loading");
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const startTime = new Date(competition.started_at).getTime();
+      const endTime = new Date(competition.ended_at).getTime();
+
+      let difference;
+
+      if (now < startTime) {
+        difference = startTime - now;
+        setTimerStatus("before");
+      } else if (now < endTime) {
+        difference = endTime - now;
+        setTimerStatus("running");
+      } else {
+        setTimeLeft("00:00:00");
+        setTimerStatus("finished");
+        return;
+      }
+
+      const totalSeconds = Math.floor(difference / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      setTimeLeft(
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+      );
+    };
+
+    updateTimer();
+
+    const intervalId = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [competition]);
+
+  const timerLabel =
+    timerStatus === "before"
+      ? "Starts in"
+      : timerStatus === "running"
+        ? "Time Left"
+        : timerStatus === "finished"
+          ? "Contest Finished"
+          : "Loading";
+
+  const timerBackground =
+    timerStatus === "before"
+      ? darkMode
+        ? "#102A43"
+        : "#E8F0FE"
+      : timerStatus === "running"
+        ? darkMode
+          ? "#2A1B0E"
+          : "#FFF3E0"
+        : darkMode
+          ? "#2A2A2A"
+          : "#F1F3F4";
+
+  const timerBorder =
+    timerStatus === "before"
+      ? "#4285F4"
+      : timerStatus === "running"
+        ? "#FFB74D"
+        : "#9AA0A6";
+
+  const timerColor =
+    timerStatus === "before"
+      ? "#1967D2"
+      : timerStatus === "running"
+        ? "#E65100"
+        : "#5F6368";
 
   return (
     <nav
@@ -117,7 +196,7 @@ const Navbar = ({
             className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
             style={{ backgroundColor: "#4285F4" }}
           >
-            CK
+            {user?.team_name ?.split(/[\s_]+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase() || "TM"}
           </div>
 
           <span
@@ -126,7 +205,7 @@ const Navbar = ({
               color: darkMode ? "#E0E0E0" : "#3C4043",
             }}
           >
-            Code_Knights
+            {user?.team_name || "Team"}
           </span>
         </div>
 
@@ -138,24 +217,38 @@ const Navbar = ({
         <div
           className="flex items-center gap-2 px-3 py-1.5 rounded-[8px]"
           style={{
-            backgroundColor: darkMode ? "#2A1B0E" : "#FFF3E0",
-            border: "1px solid #FFB74D",
+            backgroundColor: timerBackground,
+            border: `1px solid ${timerBorder}`,
           }}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <circle cx="7" cy="7" r="6" stroke="#E65100" strokeWidth="1.4" />
-            <path d="M7 4V7L9 9" stroke="#E65100" strokeWidth="1.4" strokeLinecap="round" />
+            <circle cx="7" cy="7" r="6" stroke={timerColor}  strokeWidth="1.4" />
+            <path d="M7 4V7L9 9" stroke={timerColor}  strokeWidth="1.4" strokeLinecap="round" />
           </svg>
 
-          <span
-            className="text-[14px] font-bold tabular-nums"
-            style={{
-              color: "#E65100",
-              letterSpacing: "0.5px",
-            }}
-          >
-            02:45:12
-          </span>
+          
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[12px] font-medium"
+              style={{ color: timerColor }}
+            >
+              {timerLabel}
+            </span>
+
+            {timerStatus !== "finished" && timerStatus !== "loading" && (
+              <span
+                className="text-[14px] font-bold tabular-nums"
+                style={{
+                  color: timerColor,
+                  letterSpacing: "0.5px",
+                }}
+              >
+                {timeLeft}
+              </span>
+            )}
+          </div>
+
+
         </div>
 
         <button

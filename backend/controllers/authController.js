@@ -68,8 +68,34 @@ const login = async (req, res) => {
 
 const getCurrentUser = async (req, res) => {
   try {
+    const query = `
+      SELECT
+        t.team_id,
+        t.team_name,
+        t.competition_id,
+        c.started_at,
+        c.ended_at
+      FROM teams t
+      JOIN competitions c
+        ON t.competition_id = c.competition_id
+      WHERE t.team_id = $1
+    `;
+
+    const result = await pool.query(query, [req.user.team_id]);
+
+    const team = result.rows[0];
+
     return res.status(200).json({
-      user: req.user,
+      user: {
+        team_id: team.team_id,
+        team_name: team.team_name,
+        competition_id: team.competition_id,
+        role: req.user.role,
+      },
+      competition: {
+        started_at: team.started_at,
+        ended_at: team.ended_at,
+      },
     });
   } catch (error) {
     console.error("Get current user error:", error);
