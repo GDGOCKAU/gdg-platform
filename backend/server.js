@@ -78,6 +78,11 @@ app.use("/api/submissions", submissionRoutes);
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
+// =======================================================
+// =================== Home Dashboard ====================
+const homeRoutes = require("./routes/homeRoutes");
+app.use("/api/home", homeRoutes);
+
 
 
 const PORT = process.env.PORT || 5000;

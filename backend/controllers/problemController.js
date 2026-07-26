@@ -2,22 +2,30 @@ const pool = require("../config/database");
 
 const getProblems = async (req, res) => {
   try {
-    const competitionId = req.user.competition_id;
+    const { competition_id: competitionId, team_id: teamId } = req.user;
     const query = `
         SELECT
-          problem_id,
-          problem_name,
-          difficulty,
-          points_assigned AS points,
+          p.problem_id,
+          p.problem_name,
+          p.difficulty,
+          p.points_assigned AS points,
           ROW_NUMBER() OVER (
-            ORDER BY problem_id
-            ) AS problem_order
-        FROM problems
-        WHERE competition_id = $1
-        ORDER BY problem_id
+            ORDER BY p.problem_id
+            ) AS problem_order,
+          CASE
+            WHEN bool_or(s.status = 'Accepted') THEN 'accepted'
+            WHEN bool_or(s.status IS NOT NULL AND s.status NOT IN ('Queued', 'Judging')) THEN 'wrong'
+            ELSE NULL
+          END AS status
+        FROM problems p
+        LEFT JOIN submissions s
+          ON s.problem_id = p.problem_id AND s.team_id = $2
+        WHERE p.competition_id = $1
+        GROUP BY p.problem_id, p.problem_name, p.difficulty, p.points_assigned
+        ORDER BY p.problem_id
       `;
 
-    const result = await pool.query(query, [competitionId]);
+    const result = await pool.query(query, [competitionId, teamId]);
 
     const problems = result.rows.map((problem) => ({
       ...problem,

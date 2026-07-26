@@ -1,5 +1,54 @@
 const pool = require("../config/database");
-// ايضا اضفت لك مجلد  
-// /backend/routes/homeRoutes.js
-//  وبداخله ملف خاص للصفحه الي بتشتغل عليها
-// واي شي تحتاجه علمني وابشر
+
+const getDashboard = async (req, res) => {
+  try {
+    const { team_id, competition_id } = req.user;
+
+    const standingQuery = `
+      SELECT team_id, points, solved_questions, rnk
+      FROM (
+        SELECT
+          team_id,
+          points,
+          solved_questions,
+          RANK() OVER (
+            ORDER BY points DESC, solved_questions DESC
+          ) AS rnk
+        FROM leaderboard
+        WHERE competition_id = $1
+      ) ranked
+      WHERE team_id = $2
+    `;
+
+    const totalProblemsQuery = `
+      SELECT COUNT(*)::int AS total
+      FROM problems
+      WHERE competition_id = $1
+    `;
+
+    const [standingResult, totalProblemsResult] = await Promise.all([
+      pool.query(standingQuery, [competition_id, team_id]),
+      pool.query(totalProblemsQuery, [competition_id]),
+    ]);
+
+    const standing = standingResult.rows[0] || {
+      rnk: null,
+      solved_questions: 0,
+      points: 0,
+    };
+
+    res.status(200).json({
+      rank: standing.rnk,
+      solved: standing.solved_questions,
+      total_problems: totalProblemsResult.rows[0].total,
+      total_score: standing.points,
+    });
+  } catch (error) {
+    console.error("Get dashboard error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports = {
+  getDashboard,
+};

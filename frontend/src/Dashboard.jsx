@@ -121,6 +121,9 @@ export default function Dashboard({ darkMode, setDarkMode }) {
   const [isLoadingProblems, setIsLoadingProblems] = useState(true);
   const [problemsError, setProblemsError] = useState("");
 
+  const [stats, setStats] = useState(null);
+  const [statsError, setStatsError] = useState("");
+
   useEffect(() => {
     const fetchProblems = async () => {
       try {
@@ -148,8 +151,36 @@ export default function Dashboard({ darkMode, setDarkMode }) {
       }
     };
 
+    const fetchStats = async () => {
+      try {
+        setStatsError("");
+
+        const response = await fetch(
+          "http://localhost:5000/api/home/dashboard",{credentials: "include",}
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Failed to fetch dashboard stats"
+          );
+        }
+
+        setStats(data);
+      } catch (error) {
+        console.error("Fetch dashboard stats error:", error);
+        setStatsError(error.message);
+      }
+    };
+
     fetchProblems();
+    fetchStats();
   }, []);
+
+  const solvedCount = stats?.solved ?? 0;
+  const totalProblems = stats?.total_problems ?? problems.length;
+  const solvedPercent = totalProblems > 0 ? (solvedCount / totalProblems) * 100 : 0;
 
   // Dynamic colors
   const bgStyle = darkMode ? "#121212" : "#F8F9FA";
@@ -170,9 +201,9 @@ export default function Dashboard({ darkMode, setDarkMode }) {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex-1 h-1.5 rounded-full bg-[#333333] overflow-hidden">
-              <div className="h-full rounded-full bg-[#34A853] transition-all duration-500" style={{ width: "40%" }} />
+              <div className="h-full rounded-full bg-[#34A853] transition-all duration-500" style={{ width: `${solvedPercent}%` }} />
             </div>
-            <span className="text-[13px] flex-shrink-0" style={{ color: darkMode ? "#AAAAAA" : "#5F6368" }}>2 of 5 solved</span>
+            <span className="text-[13px] flex-shrink-0" style={{ color: darkMode ? "#AAAAAA" : "#5F6368" }}>{solvedCount} of {totalProblems} solved</span>
           </div>
           <div className="flex flex-col gap-3 pb-2">
             {isLoadingProblems && (
@@ -202,11 +233,14 @@ export default function Dashboard({ darkMode, setDarkMode }) {
         <div className="flex flex-col gap-5 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
           <div className="rounded-[16px] p-5 flex flex-col gap-4" style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}` }}>
             <h3 className="text-[14px] font-bold" style={{ color: textColor }}>Your Stats</h3>
+            {statsError && (
+              <p className="text-[12px]" style={{ color: "#B71C1C" }}>{statsError}</p>
+            )}
             <div className="flex flex-col gap-0">
               {[
-                { label: "Current Rank", value: "#14", color: "#4285F4" },
-                { label: "Solved", value: "2 / 5", color: "#34A853" },
-                { label: "Total Score", value: "350 pts", color: "#FBBC04" },
+                { label: "Current Rank", value: stats?.rank ? `#${stats.rank}` : "—", color: "#4285F4" },
+                { label: "Solved", value: `${solvedCount} / ${totalProblems}`, color: "#34A853" },
+                { label: "Total Score", value: `${stats?.total_score ?? 0} pts`, color: "#FBBC04" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex items-center justify-between py-2.5" style={{ borderBottom: `1px solid ${borderColor}` }}>
                   <span className="text-[13px]" style={{ color: darkMode ? "#AAAAAA" : "#5F6368" }}>{label}</span>
