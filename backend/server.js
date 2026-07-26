@@ -66,24 +66,24 @@ app.get("/api/test-db", async (req, res) => {
 
 
 // =======================================================
-// =================== Problem Page ======================
+// ==================== Route Imports =====================
+// =======================================================
+
 const problemRoutes = require("./routes/problemRoutes");
+const authRoutes = require("./routes/authRoutes");
+const homeRoutes = require("./routes/homeRoutes");
 const submissionRoutes = require("./routes/submissionRoutes");
+const judgeRoutes = require("./routes/judgeRoutes");
+
+// =======================================================
+// ===================== API Routes =======================
+// =======================================================
 
 app.use("/api/problems", problemRoutes);
-app.use("/api/submissions", submissionRoutes);
-
-// =======================================================
-// =================== Auth Routes =======================
-const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
-
-// =======================================================
-// =================== judge Routes ======================
-const judgeRoutes = require("./routes/judgeRoutes");
+app.use("/api/home", homeRoutes);
+app.use("/api/submissions", submissionRoutes);
 app.use("/api/judge", judgeRoutes);
-
-
 
 const PORT = process.env.PORT || 5000;
 
