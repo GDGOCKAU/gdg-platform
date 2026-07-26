@@ -67,7 +67,7 @@ const getProblemById = async (req, res) => {
         FROM problems
         WHERE problem_id = $1
       )
-`;
+    `;
     
     const result = await pool.query(query, [problemId]);
     

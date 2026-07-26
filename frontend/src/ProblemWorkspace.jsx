@@ -159,6 +159,7 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
   const [problem, setProblem] = useState(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState(null);
   
   const navigate = useNavigate();
   const { problemId } = useParams();
@@ -171,13 +172,28 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
     Kotlin: "kotlin",
   };
   const submissionLanguageMap = {
-    "Python 3": "Python",
-    "C++17": "C++",
-    "Java 17": "Java",
-    C: "C",
-    Kotlin: "Kotlin",
+    "Python 3": {
+      id: 71,
+      name: "Python 3",
+    },
+    "C++17": {
+      id: 54,
+      name: "C++17",
+    },
+    "Java 17": {
+      id: 62,
+      name: "Java 17",
+    },
+    C: {
+      id: 50,
+      name: "C",
+    },
+    Kotlin: {
+      id: 78,
+      name: "Kotlin",
+    },
   };
-  
+    
   const DEFAULT_TEMPLATES = {
 "Python 3": `def solve():
   pass
@@ -224,35 +240,68 @@ public class Main {
 
   const [sourceCode, setSourceCode] = useState(DEFAULT_TEMPLATES[language]);
 
-  const handleRun = () => {
-    setRunState("running");
-    setConsoleOpen(true);
-    setTimeout(() => setRunState("done"), 1800);
+
+  const waitForSubmissionResult = async (submissionId) => {
+    const maximumAttempts = 20;
+    const pollingDelay = 1000;
+
+    for (let attempt = 1; attempt <= maximumAttempts; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, pollingDelay));
+
+      const response = await fetch(
+        `http://localhost:5000/api/submissions/${submissionId}`,
+        {
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to retrieve submission result"
+        );
+      }
+
+      const status = data.submission.status;
+
+      if (status !== "Queued" && status !== "Judging") {
+        return data;
+      }
+    }
+
+    throw new Error("Judging is taking longer than expected");
   };
 
   const handleSubmit = async () => {
-    if (!sourceCode.trim()) {
+    const currentCode = sourceCode.trim();
+    const defaultCode = DEFAULT_TEMPLATES[language].trim();
+
+    if (!currentCode || currentCode === defaultCode) {
       alert("Please write your solution before submitting.");
       return;
     }
-
     try {
       setIsSubmitting(true);
+      setSubmissionResult(null);
+      setConsoleOpen(true);
+      setRunState("running");
+
+      const selectedLanguage = submissionLanguageMap[language];
 
       const response = await fetch(
         "http://localhost:5000/api/submissions",
         {
           method: "POST",
-
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
-            team_id: 1,
-            problem_id: Number(problemId),
-            language: submissionLanguageMap[language],
-            source_code: sourceCode,
+            problemId: Number(problemId),
+            languageId: selectedLanguage.id,
+            languageName: selectedLanguage.name,
+            sourceCode,
           }),
         }
       );
@@ -265,18 +314,24 @@ public class Main {
         );
       }
 
-      console.log("Submission created:", data);
-
-      alert(
-        `Submission created successfully. Status: ${data.submission.status}`
+      const finalResult = await waitForSubmissionResult(
+        data.submissionId
       );
+
+      setSubmissionResult(finalResult);
+      setRunState("done");
     } catch (error) {
-      console.error(
-        "Submit solution error:",
-        error
-      );
+      console.error("Submit solution error:", error);
 
-      alert(error.message);
+      setSubmissionResult({
+        submission: {
+          status: "Internal Error",
+          error_message: error.message,
+        },
+        testResults: [],
+      });
+
+      setRunState("done");
     } finally {
       setIsSubmitting(false);
     }
@@ -342,6 +397,36 @@ public class Main {
     return <div>Loading...</div>;
   }
 
+  const submissionStatus = submissionResult?.submission?.status;
+
+  const statusColor =
+    submissionStatus === "Accepted"
+      ? "#34A853"
+      : submissionStatus === "Queued" || submissionStatus === "Judging"
+        ? "#FBBC04"
+        : submissionStatus
+          ? "#EA4335"
+          : "#9AA0A6";
+
+  const statusBackground =
+    submissionStatus === "Accepted"
+      ? darkMode
+        ? "#12351F"
+        : "#E6F4EA"
+      : submissionStatus === "Queued" || submissionStatus === "Judging"
+        ? darkMode
+          ? "#332A00"
+          : "#FFF8E1"
+        : submissionStatus
+          ? darkMode
+            ? "#331111"
+            : "#FFEBEE"
+          : darkMode
+            ? "#2A2A2A"
+            : "#F1F3F4";
+
+  const hasWrittenCode = sourceCode.trim() !== "" && sourceCode.trim() !== DEFAULT_TEMPLATES[language].trim();
+
   return (
     <div
       className="flex flex-col transition-colors duration-200"
@@ -381,12 +466,29 @@ public class Main {
                   <span className="text-[12px]" style={{ color: darkMode ? "#AAAAAA" : "#9AA0A6" }}> Memory: {problem.memory_limit_mb} MB</span>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full flex-shrink-0" style={{ backgroundColor: darkMode ? "#331111" : "#FFEBEE", border: "1px solid #FFCDD2" }}>
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full flex-shrink-0"
+                style={{
+                  backgroundColor: statusBackground,
+                  border: `1px solid ${statusColor}`,
+                }}
+              >
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <circle cx="5" cy="5" r="4" stroke="#EA4335" strokeWidth="1.2" />
-                  <path d="M5 3V5.5M5 7H5.01" stroke="#EA4335" strokeWidth="1.2" strokeLinecap="round" />
+                  <circle cx="5" cy="5" r="4" stroke={statusColor} strokeWidth="1.2" />
+                  <path
+                    d="M5 3V5.5M5 7H5.01"
+                    stroke={statusColor}
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                  />
                 </svg>
-                <span className="text-[11px] font-semibold" style={{ color: "#EA4335" }}>Wrong Answer</span>
+
+                <span
+                  className="text-[11px] font-semibold"
+                  style={{ color: statusColor }}
+                >
+                  {submissionStatus || "Not Submitted"}
+                </span>
               </div>
             </div>
           </div>
@@ -567,10 +669,73 @@ public class Main {
                   <path d="M8 10h2" stroke="#858585" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
                 <span className="text-[12px] font-semibold" style={{ color: "#858585", fontFamily: "'DM Sans', sans-serif" }}>Test Results</span>
-                {runState === "done" && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ backgroundColor: "#FFEBEE", color: "#EA4335" }}>
-                    Wrong Answer
-                  </span>
+                {runState === "done" && submissionResult && (
+                  <div className="flex flex-col gap-3 mt-1">
+                    <div
+                      className="text-[13px] font-bold"
+                      style={{
+                        color:
+                          submissionResult.submission.status === "Accepted"
+                            ? "#34A853"
+                            : "#EA4335",
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}
+                    >
+                      {submissionResult.submission.status}
+                    </div>
+
+                    <div
+                      className="text-[12px]"
+                      style={{
+                        color: "#858585",
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}
+                    >
+                      Passed: {submissionResult.submission.passed_testcases} /{" "}
+                      {submissionResult.submission.total_testcases}
+                    </div>
+
+                    {submissionResult.testResults.map((testResult) => (
+                      <div
+                        key={testResult.test_id}
+                        className="flex items-center gap-4 text-[12px]"
+                        style={{
+                          fontFamily: "'JetBrains Mono', monospace",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color:
+                              testResult.status === "Accepted"
+                                ? "#34A853"
+                                : "#EA4335",
+                          }}
+                        >
+                          {testResult.status === "Accepted" ? "✓" : "✗"} Test{" "}
+                          {testResult.test_id}: {testResult.status}
+                        </span>
+
+                        {testResult.execution_time_ms != null && (
+                          <span style={{ color: "#858585" }}>
+                            {Number(testResult.execution_time_ms).toFixed(1)} ms
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                    {submissionResult.submission.error_message && (
+                      <div
+                        className="text-[12px]"
+                        style={{
+                          color: "#EA4335",
+                          fontFamily: "'JetBrains Mono', monospace",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {submissionResult.submission.error_message}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               <svg
@@ -595,17 +760,6 @@ public class Main {
                     <span className="text-[13px]" style={{ color: "#858585", fontFamily: "'JetBrains Mono', monospace" }}>Compiling and running...</span>
                   </div>
                 )}
-                {runState === "done" && (
-                  <div className="flex flex-col gap-2 mt-1">
-                    <div className="flex items-center gap-4 text-[12px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                      <span style={{ color: "#34A853" }}>✓ Test 1: Passed &nbsp;(6ms)</span>
-                      <span style={{ color: "#EA4335" }}>✗ Test 2: Wrong Answer</span>
-                    </div>
-                    <div className="text-[12px] mt-1" style={{ color: "#858585", fontFamily: "'JetBrains Mono', monospace" }}>
-                      Expected: <span style={{ color: "#D4D4D4" }}>14</span> &nbsp;|&nbsp; Got: <span style={{ color: "#EA4335" }}>12</span>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -616,28 +770,29 @@ public class Main {
             style={{ height: "60px", backgroundColor: "#252526", borderTop: "1px solid #3C3C3C" }}
           >
             <button
-              onClick={handleRun}
-              className="flex items-center gap-2 px-5 py-2 rounded-[8px] text-[14px] font-semibold transition-all duration-150 hover:bg-white/10"
-              style={{ backgroundColor: "#3C3C3C", color: "#D4D4D4", border: "1px solid #555", fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <polygon points="3,2 12,7 3,12" fill="#D4D4D4" />
-              </svg>
-              Run Code
-            </button>
-
-            <button
               className="flex items-center gap-2 px-6 py-2 rounded-[100px] text-[14px] font-semibold text-white transition-all duration-150"
               style={{
-                backgroundColor: isSubmitting ? "#6D8FCB" : "#3A7CF5",
+                backgroundColor:
+                  isSubmitting || !hasWrittenCode
+                    ? "#6D8FCB"
+                    : "#3A7CF5",
                 border: "none",
                 fontFamily: "'DM Sans', sans-serif",
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                opacity: isSubmitting ? 0.7 : 1,
-                boxShadow: "0px 2px 8px rgba(58,124,245,0.40)",
+                cursor:
+                  isSubmitting || !hasWrittenCode
+                    ? "not-allowed"
+                    : "pointer",
+                opacity:
+                  isSubmitting || !hasWrittenCode
+                    ? 0.6
+                    : 1,
+                boxShadow:
+                  isSubmitting || !hasWrittenCode
+                    ? "none"
+                    : "0px 2px 8px rgba(58,124,245,0.40)",
               }}
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !hasWrittenCode}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M2 7h10M8 3l4 4-4 4" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />

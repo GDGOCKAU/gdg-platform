@@ -78,6 +78,11 @@ app.use("/api/submissions", submissionRoutes);
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
+// =======================================================
+// =================== judge Routes ======================
+const judgeRoutes = require("./routes/judgeRoutes");
+app.use("/api/judge", judgeRoutes);
+
 
 
 const PORT = process.env.PORT || 5000;

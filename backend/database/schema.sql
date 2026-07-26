@@ -117,6 +117,7 @@ CREATE TABLE test_cases (
     input_data          TEXT NOT NULL,
     expected_output     TEXT NOT NULL,
     is_hidden           BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT pk_test_cases
         PRIMARY KEY (problem_id, test_id),
@@ -131,32 +132,137 @@ CREATE TABLE test_cases (
 -- =========================================================
 -- 6. Submissions
 -- =========================================================
+CREATE TYPE submission_status AS ENUM (
+    'Queued',
+    'Judging',
+    'Accepted',
+    'Wrong Answer',
+    'Time Limit Exceeded',
+    'Runtime Error',
+    'Compilation Error',
+    'Internal Error',
+    'Cancelled'
+);
+
+CREATE TYPE test_result_status AS ENUM (
+    'Queued',
+    'Processing',
+    'Accepted',
+    'Wrong Answer',
+    'Time Limit Exceeded',
+    'Runtime Error',
+    'Compilation Error',
+    'Internal Error',
+    'Skipped'
+);
+
 CREATE TABLE submissions (
-    submission_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    submission_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     team_id INTEGER NOT NULL,
     problem_id INTEGER NOT NULL,
 
-    status VARCHAR(30) NOT NULL
-    CHECK (
-        status IN (
-            'Pending',
-            'Processing',
-            'Accepted',
-            'Wrong Answer',
-            'Time Limit',
-            'Runtime Error',
-            'Compile Error',
-            'Internal Error'
-        )
-    ),
+    status submission_status NOT NULL DEFAULT 'Queued',
 
-    language VARCHAR(50) NOT NULL,
+    -- Judge0 language identifier, such as 62, 63, 71, etc.
+    language_id INTEGER NOT NULL,
+
+    -- Snapshot of the language name at submission time.
+    language_name VARCHAR(100) NOT NULL,
+
     source_code TEXT NOT NULL,
 
-    judge0_token VARCHAR(255),
+    -- Prevents accidental duplicate submissions caused by retries
+    -- or double-clicking the Submit button.
+    idempotency_key UUID UNIQUE,
 
-    execution_time INTERVAL,
+    passed_testcases INTEGER NOT NULL DEFAULT 0
+    CHECK (passed_testcases >= 0),
+
+    total_testcases INTEGER NOT NULL DEFAULT 0
+    CHECK (total_testcases >= 0),
+
+    score NUMERIC(10, 2) NOT NULL DEFAULT 0
+    CHECK (score >= 0),
+
+    -- Longest execution time among all test cases.
+    max_execution_time_ms NUMERIC(12, 3)
+    CHECK (
+        max_execution_time_ms IS NULL
+        OR max_execution_time_ms >= 0
+    ),
+
+    -- Highest memory usage among all test cases.
+    max_memory_used_kb INTEGER
+    CHECK (
+        max_memory_used_kb IS NULL
+        OR max_memory_used_kb >= 0
+    ),
+
+    -- General error visible to the team, such as a compilation error.
+    error_message TEXT,
+
+    submitted_at TIMESTAMP WITH TIME ZONE
+    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    judging_started_at TIMESTAMP WITH TIME ZONE,
+
+    judged_at TIMESTAMP WITH TIME ZONE,
+
+    updated_at TIMESTAMP WITH TIME ZONE
+    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_submissions_team
+        FOREIGN KEY (team_id)
+        REFERENCES teams (team_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_submissions_problem
+        FOREIGN KEY (problem_id)
+        REFERENCES problems (problem_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT chk_submission_testcase_counts
+        CHECK (passed_testcases <= total_testcases),
+
+    CONSTRAINT chk_submission_judging_times
+        CHECK (
+            judging_started_at IS NULL
+            OR judging_started_at >= submitted_at
+        ),
+
+    CONSTRAINT chk_submission_judged_at
+        CHECK (
+            judged_at IS NULL
+            OR judged_at >= submitted_at
+        ),
+
+    CONSTRAINT uq_submission_problem
+        UNIQUE (submission_id, problem_id)
+);
+
+CREATE TABLE submission_test_results (
+    result_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    submission_id BIGINT NOT NULL,
+    problem_id INTEGER NOT NULL,
+    test_id INTEGER NOT NULL,
+
+    status test_result_status NOT NULL DEFAULT 'Queued',
+
+    judge0_token VARCHAR(255) UNIQUE,
+
+    -- Original Judge0 status for debugging and provider tracking.
+    judge0_status_id INTEGER,
+    judge0_status_description VARCHAR(100),
+
+    execution_time_ms NUMERIC(12, 3)
+    CHECK (
+        execution_time_ms IS NULL
+        OR execution_time_ms >= 0
+    ),
 
     memory_used_kb INTEGER
     CHECK (
@@ -164,27 +270,91 @@ CREATE TABLE submissions (
         OR memory_used_kb >= 0
     ),
 
-    submitted_at TIMESTAMP WITH TIME ZONE
+    -- Actual program output.
+    stdout TEXT,
+
+    -- Runtime error output.
+    stderr TEXT,
+
+    -- Compiler output for compilation failures.
+    compile_output TEXT,
+
+    -- Additional Judge0 system message.
+    judge_message TEXT,
+
+    created_at TIMESTAMP WITH TIME ZONE
     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_submissions_team
-        FOREIGN KEY (team_id)
-        REFERENCES teams (team_id)
+    processing_started_at TIMESTAMP WITH TIME ZONE,
+
+    completed_at TIMESTAMP WITH TIME ZONE,
+
+    CONSTRAINT fk_test_result_submission
+        FOREIGN KEY (submission_id, problem_id)
+        REFERENCES submissions (submission_id, problem_id)
         ON UPDATE CASCADE
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_submissions_problem
-        FOREIGN KEY (problem_id)
-        REFERENCES problems (problem_id)
+    CONSTRAINT fk_test_result_testcase
+        FOREIGN KEY (problem_id, test_id)
+        REFERENCES test_cases (problem_id, test_id)
         ON UPDATE CASCADE
-        ON DELETE CASCADE,
+        ON DELETE RESTRICT,
 
-    CONSTRAINT chk_execution_time
+    CONSTRAINT uq_submission_testcase
+        UNIQUE (submission_id, test_id),
+
+    CONSTRAINT chk_test_result_started_at
         CHECK (
-            execution_time IS NULL
-            OR execution_time >= INTERVAL '0 seconds'
+            processing_started_at IS NULL
+            OR processing_started_at >= created_at
+        ),
+
+    CONSTRAINT chk_test_result_completed_at
+        CHECK (
+            completed_at IS NULL
+            OR completed_at >= created_at
         )
 );
+
+CREATE INDEX idx_submissions_team_submitted_at
+ON submissions (team_id, submitted_at DESC);
+
+CREATE INDEX idx_submissions_problem_submitted_at
+ON submissions (problem_id, submitted_at DESC);
+
+CREATE INDEX idx_submissions_status
+ON submissions (status)
+WHERE status IN ('Queued', 'Judging');
+
+CREATE INDEX idx_submissions_team_problem_status
+ON submissions (team_id, problem_id, status);
+
+CREATE INDEX idx_submission_test_results_submission
+ON submission_test_results (submission_id, test_id);
+
+CREATE INDEX idx_submission_test_results_pending
+ON submission_test_results (status)
+WHERE status IN ('Queued', 'Processing');
+
+CREATE INDEX idx_submission_test_results_judge0_token
+ON submission_test_results (judge0_token)
+WHERE judge0_token IS NOT NULL;
+
+
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_submissions_updated_at
+BEFORE UPDATE ON submissions
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
 
 -- =========================================================
 -- 7. Leaderboard
