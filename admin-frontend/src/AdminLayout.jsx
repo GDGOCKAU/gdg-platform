@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from './components/AdminSidebar';
-import AdminHeader from './components/AdminHeader';
+import AdminNavbar from './components/AdminNavbar';
 
 export default function AdminLayout({ darkMode, setDarkMode }) {
   return (
@@ -9,7 +9,7 @@ export default function AdminLayout({ darkMode, setDarkMode }) {
       <div className="flex flex-1 overflow-hidden min-h-0">
         <AdminSidebar darkMode={darkMode} />
         <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-          <AdminHeader darkMode={darkMode} setDarkMode={setDarkMode} />
+          <AdminNavbar darkMode={darkMode} setDarkMode={setDarkMode} />
           <main className="flex-1 overflow-y-auto px-8 py-7">
             <Outlet context={{ darkMode }} />
           </main>
