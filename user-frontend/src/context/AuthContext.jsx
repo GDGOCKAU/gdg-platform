@@ -6,6 +6,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [competition, setCompetition] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -22,6 +23,7 @@ export const AuthProvider = ({ children }) => {
 
         const data = await response.json();
         setUser(data.user);
+        setDarkMode(data.user.theme === "Dark");
         setCompetition(data.competition);
       } catch (error) {
         console.error("Check auth error:", error);
@@ -36,7 +38,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, setUser, competition, setCompetition, loading }}>
+    <AuthContext.Provider value={{ user, setUser, competition, setCompetition, loading, darkMode, setDarkMode, }}>
       {children}
     </AuthContext.Provider>
   );

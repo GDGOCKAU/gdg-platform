@@ -13,6 +13,11 @@ DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS problems CASCADE;
 DROP TABLE IF EXISTS teams CASCADE;
 DROP TABLE IF EXISTS competitions CASCADE;
+DROP TABLE IF EXISTS submission_test_results CASCADE;
+DROP TYPE IF EXISTS submission_status CASCADE;
+DROP TYPE IF EXISTS test_result_status CASCADE;
+
+
 
 -- =========================================================
 -- 1. Competitions
@@ -42,6 +47,8 @@ CREATE TABLE teams (
     team_name           VARCHAR(50) NOT NULL,
     access_code         VARCHAR(255) NOT NULL,
     competition_id      INTEGER NOT NULL,
+    theme               VARCHAR(10) NOT NULL DEFAULT 'Light'
+                        CHECK (theme IN ('Light', 'Dark')),
 
     CONSTRAINT fk_teams_competition
         FOREIGN KEY (competition_id)

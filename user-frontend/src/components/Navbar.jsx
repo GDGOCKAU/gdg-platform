@@ -40,6 +40,7 @@ const Navbar = ({darkMode, setDarkMode,}) => {
   const { user, competition } = useAuth();
   const [timeLeft, setTimeLeft] = useState("00:00:00");
   const [timerStatus, setTimerStatus] = useState("loading");
+  const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
 
   const navBg = darkMode
     ? "#1E1E1E"
@@ -53,13 +54,50 @@ const Navbar = ({darkMode, setDarkMode,}) => {
 
   const isLeaderboardPage = location.pathname === "/leaderboard";
 
+  
+  const handleThemeToggle = async () => {
+    if (isUpdatingTheme) return;
+    
+    const previousDarkMode = darkMode;
+    const newDarkMode = !darkMode;
+    const newTheme = newDarkMode ? "Dark" : "Light";
+    
+    try {
+      setIsUpdatingTheme(true);
+      setDarkMode(newDarkMode);
+      
+      const response = await fetch("http://localhost:5000/api/users/theme", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          theme: newTheme,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update theme");
+      }
+    } catch (error) {
+      console.error("Update theme error:", error);
+      
+      setDarkMode(previousDarkMode);
+    } finally {
+      setIsUpdatingTheme(false);
+    }
+  };
+
   useEffect(() => {
     if (!competition?.started_at || !competition?.ended_at) {
       setTimeLeft("00:00:00");
       setTimerStatus("loading");
       return;
     }
-
+  
     const updateTimer = () => {
       const now = new Date().getTime();
       const startTime = new Date(competition.started_at).getTime();
@@ -252,14 +290,14 @@ const Navbar = ({darkMode, setDarkMode,}) => {
         </div>
 
         <button
-          onClick={() => setDarkMode(!darkMode)}
+          onClick={handleThemeToggle}
+          disabled={isUpdatingTheme}
           className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors duration-150"
           style={{
             border: `1px solid ${borderColor}`,
-            backgroundColor: darkMode
-              ? "#2A2A2A"
-              : "transparent",
-            cursor: "pointer",
+            backgroundColor: darkMode ? "#2A2A2A" : "transparent",
+            cursor: isUpdatingTheme ? "not-allowed" : "pointer",
+            opacity: isUpdatingTheme ? 0.6 : 1,
           }}
           aria-label="Toggle dark mode"
         >

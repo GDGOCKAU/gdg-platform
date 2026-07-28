@@ -35,13 +35,13 @@ VALUES
 -- =========================================================
 -- Teams
 -- =========================================================
-INSERT INTO teams (team_name, access_code, competition_id)
+INSERT INTO teams (team_name, access_code, competition_id, theme)
 VALUES
-    ('Byte Force', '111111', 1),
-    ('Code Falcons', '222222', 1),
-    ('Null Pointers', '333333', 1),
-    ('API Masters', '444444', 2),
-    ('test', '1234', 1);
+    ('Byte Force', '111111', 1, 'Dark'),
+    ('Code Falcons', '222222', 1, 'Dark'),
+    ('Null Pointers', '333333', 1, 'Dark'),
+    ('API Masters', '444444', 2, 'Dark'),
+    ('test', '1234', 1, 'Dark');
 
 -- =========================================================
 -- Users
@@ -49,9 +49,9 @@ VALUES
 -- Access codes are plain text temporarily for development.
 -- In production, store hashed access codes.
 -- =========================================================
-INSERT INTO users (user_name, access_code, role)
+INSERT INTO users (user_name, access_code, role, theme)
 VALUES
-    ('admin_gdg', '999999', 'Admin');
+    ('admin_gdg', '999999', 'Admin', 'Dark');
 
 -- =========================================================
 -- Problems

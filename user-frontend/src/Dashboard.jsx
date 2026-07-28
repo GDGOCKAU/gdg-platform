@@ -208,7 +208,7 @@ export default function Dashboard({ darkMode, setDarkMode }) {
           </div>
           <div className="flex flex-col gap-3 pb-2">
             {isLoadingProblems && (
-              <LoadingScreen />
+              <LoadingScreen darkMode={darkMode} />
             )}
 
             {problemsError && (

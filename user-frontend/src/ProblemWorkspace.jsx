@@ -395,7 +395,7 @@ public class Main {
   const inlineCodeBg = darkMode ? "#2A2A2A" : "#F1F3F4";
 
   if (!problem) {
-    return <LoadingScreen />;
+    return <LoadingScreen darkMode={darkMode} />;
   }
 
   const submissionStatus = submissionResult?.submission?.status;

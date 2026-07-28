@@ -1,13 +1,19 @@
 import React from "react";
 
-export default function LoadingScreen() {
+export default function LoadingScreen({ darkMode = false }) {
+  const backgroundColor = darkMode ? "#121212" : "#F8F9FA";
+  const titleColor = darkMode ? "#E0E0E0" : "#1C1B1F";
+  const badgeBackground = darkMode ? "#1E1E1E" : "#FFFFFF";
+  const badgeBorder = darkMode ? "#333333" : "#E0E0E0";
+  const badgeTextColor = darkMode ? "#AAAAAA" : "#5F6368";
+  const shapeOpacity = darkMode ? 0.12 : 0.045;
   return (
     <div
       className="relative flex flex-col items-center justify-center overflow-hidden"
-      style={{ width: "100%", height: "100vh", backgroundColor: "#F8F9FA" }}
+      style={{ width: "100%", height: "100vh", backgroundColor}}
     >
       {/* Geometric bg — top-right */}
-      <svg className="absolute top-0 right-0 pointer-events-none" width="420" height="420" viewBox="0 0 420 420" fill="none" style={{ opacity: 0.045 }}>
+      <svg className="absolute top-0 right-0 pointer-events-none" width="420" height="420" viewBox="0 0 420 420" fill="none" style={{ opacity: shapeOpacity }}>
         <circle cx="360" cy="60"  r="180" stroke="#4285F4" strokeWidth="1.5" />
         <circle cx="360" cy="60"  r="130" stroke="#EA4335" strokeWidth="1.5" />
         <circle cx="300" cy="120" r="180" stroke="#FBBC04" strokeWidth="1.5" />
@@ -16,7 +22,7 @@ export default function LoadingScreen() {
       </svg>
 
       {/* Geometric bg — bottom-left */}
-      <svg className="absolute bottom-0 left-0 pointer-events-none" width="420" height="420" viewBox="0 0 420 420" fill="none" style={{ opacity: 0.045 }}>
+      <svg className="absolute bottom-0 left-0 pointer-events-none" width="420" height="420" viewBox="0 0 420 420" fill="none" style={{ opacity: shapeOpacity }}>
         <circle cx="60"  cy="360" r="180" stroke="#34A853" strokeWidth="1.5" />
         <circle cx="60"  cy="360" r="130" stroke="#FBBC04" strokeWidth="1.5" />
         <circle cx="120" cy="300" r="180" stroke="#EA4335" strokeWidth="1.5" />
@@ -49,7 +55,7 @@ export default function LoadingScreen() {
       {/* Heading */}
       <h1
         className="mt-7 text-[28px] font-bold tracking-[-0.4px] text-[#1C1B1F]"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}
+        style={{ fontFamily: "'DM Sans', sans-serif", color: titleColor }}
       >
         Loading
       </h1>
@@ -57,14 +63,14 @@ export default function LoadingScreen() {
       {/* Footer badge */}
       <div
         className="absolute bottom-8 flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white"
-        style={{ border: "1.5px solid #E0E0E0", boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }}
+        style={{ backgroundColor: badgeBackground, border: `1.5px solid ${badgeBorder}`, boxShadow: darkMode ? "0 1px 8px rgba(0,0,0,0.35)" : "0 1px 6px rgba(0,0,0,0.06)", }}
       >
         <div className="flex items-center gap-1">
           {["#4285F4", "#EA4335", "#FBBC04", "#34A853"].map(c => (
             <span key={c} className="w-2 h-2 rounded-full" style={{ backgroundColor: c }} />
           ))}
         </div>
-        <span className="text-[12px] font-semibold text-[#5F6368]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <span className="text-[12px] font-semibold text-[#5F6368]" style={{ fontFamily: "'DM Sans', sans-serif", color: badgeTextColor,}}>
           Powered by GDG KAU × ICPC
         </span>
       </div>

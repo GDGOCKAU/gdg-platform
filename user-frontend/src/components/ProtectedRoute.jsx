@@ -3,10 +3,10 @@ import { useAuth } from "../context/AuthContext";
 import LoadingScreen from "./LoadingScreen";
 
 export default function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, darkMode } = useAuth();
 
   if (loading) {
-    return <LoadingScreen />;
+    return <LoadingScreen darkMode={darkMode} />;
   }
 
   if (!user) {

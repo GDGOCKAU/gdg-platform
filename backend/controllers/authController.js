@@ -15,7 +15,8 @@ const login = async (req, res) => {
         SELECT
             team_id,
             team_name,
-            competition_id
+            competition_id,
+            theme
         FROM teams
         WHERE LOWER(team_name) = LOWER($1)
             AND access_code = $2
@@ -54,6 +55,7 @@ const login = async (req, res) => {
         team_id: team.team_id,
         team_name: team.team_name,
         competition_id: team.competition_id,
+        theme: team.theme,
         role: "Participant",
       },
     });
@@ -73,6 +75,7 @@ const getCurrentUser = async (req, res) => {
         t.team_id,
         t.team_name,
         t.competition_id,
+        t.theme,
         c.started_at,
         c.ended_at
       FROM teams t
@@ -90,6 +93,7 @@ const getCurrentUser = async (req, res) => {
         team_id: team.team_id,
         team_name: team.team_name,
         competition_id: team.competition_id,
+        theme: team.theme,
         role: req.user.role,
       },
       competition: {
