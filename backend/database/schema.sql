@@ -63,7 +63,9 @@ CREATE TABLE users (
     user_name           VARCHAR(50) NOT NULL UNIQUE,
     access_code         VARCHAR(255) NOT NULL,
     role                VARCHAR(15) NOT NULL DEFAULT 'Admin'
-                        CHECK (role = 'Admin')
+                        CHECK (role = 'Admin'),
+    theme               VARCHAR(10) NOT NULL DEFAULT 'Light'
+                        CHECK (theme IN ('Light', 'Dark'))
 );
 
 -- =========================================================

@@ -3,6 +3,7 @@ import gdgLogoImg from "./assets/gdg-logo.png";
 import ProblemWorkspace from "./ProblemWorkspace"; 
 import LeaderboardView from "./LeaderboardView";
 import { useNavigate } from "react-router-dom";
+import LoadingScreen from "./components/LoadingScreen";
 
 function GDGLogo({ darkMode }) {
   return (
@@ -207,7 +208,7 @@ export default function Dashboard({ darkMode, setDarkMode }) {
           </div>
           <div className="flex flex-col gap-3 pb-2">
             {isLoadingProblems && (
-              <p>Loading problems...</p>
+              <LoadingScreen />
             )}
 
             {problemsError && (

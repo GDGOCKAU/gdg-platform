@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import gdgLogoImg from "./assets/gdg-logo.png";
 import { useNavigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
+import LoadingScreen from "./components/LoadingScreen";
 
 function GDGLogo({ darkMode }) {
   return (
@@ -394,7 +395,7 @@ public class Main {
   const inlineCodeBg = darkMode ? "#2A2A2A" : "#F1F3F4";
 
   if (!problem) {
-    return <div>Loading...</div>;
+    return <LoadingScreen />;
   }
 
   const submissionStatus = submissionResult?.submission?.status;
