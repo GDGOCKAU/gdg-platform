@@ -7,6 +7,7 @@ import LeaderboardView from "./LeaderboardView";
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+
 export default function App() {
   const [darkMode, setDarkMode] = useState(false);
 
