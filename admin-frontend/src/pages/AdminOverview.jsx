@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from 'react-router-dom';
 
 // Constants & Status Badges 
@@ -132,6 +132,9 @@ function ViewAllModal({ onClose, darkMode, submissions }) {
 
 export default function AdminOverview() {
   const { darkMode } = useOutletContext() || {};
+  const [overviewData, setOverviewData] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(true);
+  const [overviewError, setOverviewError] = useState("");
   
   const [showFilter, setShowFilter] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
@@ -141,12 +144,48 @@ export default function AdminOverview() {
   const [filterAcceptedOnly, setFilterAcceptedOnly] = useState(false);
   const [filterErrorsWarnings, setFilterErrorsWarnings] = useState(false);
 
+  useEffect(() => {
+    const fetchOverview = async () => {
+      try {
+        setOverviewLoading(true);
+        setOverviewError("");
+
+        const response = await fetch(
+          "http://localhost:5000/api/admin/overview?competition_id=1",
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Failed to load overview data"
+          );
+        }
+
+        setOverviewData(data);
+      } catch (error) {
+        console.error("Fetch overview error:", error);
+        setOverviewError(error.message);
+      } finally {
+        setOverviewLoading(false);
+      }
+    };
+
+    fetchOverview();
+  }, []);
+
   const isAllSubmissions = !filterAcceptedOnly && !filterErrorsWarnings;
 
   const handleAllSubmissionsChange = () => {
     setFilterAcceptedOnly(false);
     setFilterErrorsWarnings(false);
   };
+
+  const stats = overviewData?.stats;
 
   // Filter the Data
   const filteredSubmissions = useMemo(() => {
@@ -161,6 +200,17 @@ export default function AdminOverview() {
 
   return (
     <div className="flex flex-col gap-7 relative">
+      {overviewError && (
+        <div
+          className={`px-4 py-3 rounded-[10px] border text-[13px] font-['Roboto'] ${
+            darkMode
+              ? "bg-red-950/30 border-red-900/50 text-red-400"
+              : "bg-[#FFEBEE] border-[#FFCDD2] text-[#C62828]"
+          }`}
+        >
+          {overviewError}
+        </div>
+      )}
       
       {/* Page Title & Action Bar */}
       <div className="flex items-end justify-between">
@@ -238,8 +288,12 @@ export default function AdminOverview() {
         {[
           {
             label: "Active Teams",
-            value: "42",
-            sub: "/ 48 registered",
+            value: overviewLoading
+              ? "..."
+              : String(stats?.active_teams ?? 0),
+            sub: overviewLoading
+              ? "Loading teams"
+              : `/ ${stats?.registered_teams ?? 0} registered`,
             accent: "#4285F4",
             bg: darkMode ? "rgba(66,133,244,0.15)" : "#E8F0FE",
             change: "+2 in last 10 min",
@@ -256,11 +310,11 @@ export default function AdminOverview() {
           },
           {
             label: "Total Submissions",
-            value: "184",
+            value: overviewLoading ? "..." : String(stats?.total_submissions ?? 0),
             sub: "across all problems",
             accent: "#34A853",
             bg: darkMode ? "rgba(52,168,83,0.15)" : "#E8F5E9",
-            change: "↑ 12 in last 5 min",
+            change: overviewLoading ? "Loading activity" : `↑ ${stats?.submissions_last_five_minutes ?? 0} in last 5 min`,
             changeUp: true,
             sparkPoints: [80, 95, 110, 125, 140, 162, 184],
             icon: (
@@ -273,11 +327,13 @@ export default function AdminOverview() {
           },
           {
             label: "Success Rate",
-            value: "34%",
+            value: overviewLoading
+              ? "..."
+              : `${stats?.success_rate ?? 0}%`,
             sub: "submissions accepted",
             accent: "#E65100",
             bg: darkMode ? "rgba(230,81,0,0.15)" : "#FFF8E1",
-            change: "62 accepted of 184",
+            change: overviewLoading ? "Loading results" : `${stats?.accepted_submissions ?? 0} accepted of ${ stats?.total_submissions ?? 0}`,
             changeUp: false,
             sparkPoints: [40, 38, 35, 37, 34, 33, 34],
             icon: (

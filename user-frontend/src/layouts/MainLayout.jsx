@@ -11,7 +11,6 @@ const MainLayout = ({
   borderColor,
 }) => {
   const { user } = useAuth();
-  console.log(user);
   const [themeReady, setThemeReady] = useState(false);
 
   useEffect(() => {

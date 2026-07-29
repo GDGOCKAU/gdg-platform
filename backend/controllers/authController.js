@@ -42,7 +42,7 @@ const login = async (req, res) => {
         role: "Participant",
         });
 
-    res.cookie("token", token, {
+    res.cookie("participant_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

@@ -7,7 +7,26 @@ const cookieParser = require("cookie-parser");
 
 const app = express();
 
-app.use(cors({origin: "http://localhost:5173", credentials: true,}));
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error("Not allowed by CORS")
+      );
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -20,25 +39,6 @@ app.get("/", (req, res) => {
 // =======================================================
 // ================== Database Tester ====================
 // =======================================================
-app.get("/api/test-database", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT NOW() AS current_time");
-
-    res.status(200).json({
-      success: true,
-      message: "Database connected successfully",
-      databaseTime: result.rows[0].current_time,
-    });
-  } catch (error) {
-    console.error("Database connection failed:", error.message);
-
-    res.status(500).json({
-      success: false,
-      message: "Database connection failed",
-      error: error.message,
-    });
-  }
-});
 
 app.get("/api/test-db", async (req, res) => {
   try {
@@ -76,6 +76,7 @@ const submissionRoutes = require("./routes/submissionRoutes");
 const judgeRoutes = require("./routes/judgeRoutes");
 const userRoutes = require("./routes/teamRoutes");
 const adminAuthRoutes = require("./routes/adminAuthRoutes");
+const adminOverviewRoutes = require("./routes/adminOverviewRoutes");
 
 // =======================================================
 // ===================== API Routes =======================
@@ -88,6 +89,7 @@ app.use("/api/submissions", submissionRoutes);
 app.use("/api/judge", judgeRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
+app.use("/api/admin/overview", adminOverviewRoutes);
 
 const PORT = process.env.PORT || 5000;
 

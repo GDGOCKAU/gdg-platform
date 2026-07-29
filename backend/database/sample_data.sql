@@ -35,13 +35,50 @@ VALUES
 -- =========================================================
 -- Teams
 -- =========================================================
-INSERT INTO teams (team_name, access_code, competition_id, theme)
+INSERT INTO teams
+(
+    team_name,
+    access_code,
+    competition_id,
+    theme,
+    last_seen_at
+)
 VALUES
-    ('Byte Force', '111111', 1, 'Dark'),
-    ('Code Falcons', '222222', 1, 'Dark'),
-    ('Null Pointers', '333333', 1, 'Dark'),
-    ('API Masters', '444444', 2, 'Dark'),
-    ('test', '1234', 1, 'Dark');
+(
+    'Byte Force',
+    '111111',
+    1,
+    'Dark',
+    CURRENT_TIMESTAMP
+),
+(
+    'Code Falcons',
+    '222222',
+    1,
+    'Dark',
+    CURRENT_TIMESTAMP - INTERVAL '2 minutes'
+),
+(
+    'Null Pointers',
+    '333333',
+    1,
+    'Dark',
+    CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+),
+(
+    'API Masters',
+    '444444',
+    2,
+    'Dark',
+    CURRENT_TIMESTAMP - INTERVAL '25 minutes'
+),
+(
+    'test',
+    '1234',
+    1,
+    'Dark',
+    CURRENT_TIMESTAMP - INTERVAL '1 minute'
+);
 
 -- =========================================================
 -- Users
@@ -49,15 +86,16 @@ VALUES
 -- Access codes are plain text temporarily for development.
 -- In production, store hashed access codes.
 -- =========================================================
-INSERT INTO users (user_name, access_code, role, theme)
+INSERT INTO users (user_name, password, role, theme)
 VALUES
-    ('admin', '9999', 'Admin', 'Dark');
+    ('admin', '$2b$12$jlo/11rVY7K7vrAHFfl0c.UML.umakErP/d0f7wmQGV2OGP89l7Yy', 'Admin', 'Dark');
 
 -- =========================================================
 -- Problems
 -- =========================================================
 INSERT INTO problems
 (
+    problem_code,
     problem_name,
     description,
     input_format,
@@ -72,6 +110,7 @@ INSERT INTO problems
 )
 VALUES
 (
+    'A',
     'Two Sum',
     'Given two integers, print their sum.',
     'The input contains two integers A and B.',
@@ -85,6 +124,7 @@ VALUES
     100
 ),
 (
+    'B',
     'Palindrome Check',
     'Given a string, print YES if it is a palindrome; otherwise print NO.',
     'A single string S.',
@@ -98,9 +138,10 @@ VALUES
     150
 ),
 (
+    'C',
     'Shortest Path',
     'Find the shortest distance from node 1 to node N in a weighted graph.',
-    'The first line contains N and M, followed by M weighted edges.',
+    'The first line contains N and M followed by M weighted edges.',
     'Print the shortest distance from node 1 to node N.',
     512,
     1,
@@ -113,6 +154,7 @@ VALUES
     500
 ),
 (
+    'A',
     'SQL Team Count',
     'Return the number of teams registered in a competition.',
     'No input.',
@@ -652,3 +694,40 @@ VALUES
     (4, 2, 0, 0);
 
 COMMIT;
+
+-- =========================================================
+-- announcements
+-- =========================================================
+
+INSERT INTO announcements
+(
+    competition_id,
+    created_by,
+    title,
+    message
+)
+VALUES
+(
+    1,
+    1,
+    'Welcome Contestants',
+    'Welcome to the GDG Programming Competition. We wish everyone the best of luck!'
+),
+(
+    1,
+    1,
+    'Clarification for Problem B',
+    'The sample explanation has been updated. The input and output format remain unchanged.'
+),
+(
+    1,
+    1,
+    'Submission Reminder',
+    'Remember that only the latest accepted submission will be counted before the contest ends.'
+),
+(
+    2,
+    1,
+    'SQL Contest Started',
+    'The SQL competition is now live. You may begin solving the problems.'
+);

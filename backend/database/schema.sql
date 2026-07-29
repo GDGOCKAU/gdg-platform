@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS problems CASCADE;
 DROP TABLE IF EXISTS teams CASCADE;
 DROP TABLE IF EXISTS competitions CASCADE;
 DROP TABLE IF EXISTS submission_test_results CASCADE;
+DROP TABLE IF EXISTS announcements CASCADE;
 DROP TYPE IF EXISTS submission_status CASCADE;
 DROP TYPE IF EXISTS test_result_status CASCADE;
 
@@ -47,8 +48,14 @@ CREATE TABLE teams (
     team_name           VARCHAR(50) NOT NULL,
     access_code         VARCHAR(255) NOT NULL,
     competition_id      INTEGER NOT NULL,
+
     theme               VARCHAR(10) NOT NULL DEFAULT 'Light'
                         CHECK (theme IN ('Light', 'Dark')),
+
+    last_seen_at        TIMESTAMP WITH TIME ZONE,
+
+    created_at          TIMESTAMP WITH TIME ZONE
+                        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_teams_competition
         FOREIGN KEY (competition_id)
@@ -80,6 +87,9 @@ CREATE TABLE users (
 -- =========================================================
 CREATE TABLE problems (
     problem_id          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    problem_code        VARCHAR(5) NOT NULL,
+
     problem_name        VARCHAR(100) NOT NULL,
     description         TEXT NOT NULL,
     input_format        TEXT NOT NULL,
@@ -108,6 +118,12 @@ CREATE TABLE problems (
 
     CONSTRAINT uq_problem_name_per_competition
         UNIQUE (competition_id, problem_name),
+
+    CONSTRAINT uq_problem_code_per_competition
+        UNIQUE (competition_id, problem_code),
+
+    CONSTRAINT chk_problem_code
+        CHECK (LENGTH(TRIM(problem_code)) > 0),
 
     CONSTRAINT chk_problem_time_limit
         CHECK (time_limit > 0),
@@ -326,6 +342,42 @@ CREATE TABLE submission_test_results (
         )
 );
 
+CREATE TABLE announcements (
+    announcement_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    competition_id      INTEGER NOT NULL,
+    created_by          INTEGER NOT NULL,
+
+    title               VARCHAR(100) NOT NULL,
+    message             TEXT NOT NULL,
+
+    is_published        BOOLEAN NOT NULL DEFAULT TRUE,
+
+    created_at          TIMESTAMP WITH TIME ZONE
+                        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at          TIMESTAMP WITH TIME ZONE
+                        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_announcements_competition
+        FOREIGN KEY (competition_id)
+        REFERENCES competitions (competition_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_announcements_admin
+        FOREIGN KEY (created_by)
+        REFERENCES users (user_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT chk_announcement_title
+        CHECK (LENGTH(TRIM(title)) > 0),
+
+    CONSTRAINT chk_announcement_message
+        CHECK (LENGTH(TRIM(message)) > 0)
+);
+
 CREATE INDEX idx_submissions_team_submitted_at
 ON submissions (team_id, submitted_at DESC);
 
@@ -350,6 +402,14 @@ CREATE INDEX idx_submission_test_results_judge0_token
 ON submission_test_results (judge0_token)
 WHERE judge0_token IS NOT NULL;
 
+CREATE INDEX idx_teams_competition_last_seen
+ON teams (competition_id, last_seen_at DESC);
+
+CREATE INDEX idx_announcements_competition_created_at
+ON announcements (competition_id, created_at DESC);
+
+CREATE INDEX idx_announcements_published
+ON announcements (competition_id, is_published, created_at DESC);
 
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()

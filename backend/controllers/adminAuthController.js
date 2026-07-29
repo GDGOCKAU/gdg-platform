@@ -57,7 +57,7 @@ const loginAdmin = async (req, res) => {
       role: user.role,
     });
 
-    res.cookie("token", token, {
+    res.cookie("admin_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite:
@@ -127,7 +127,7 @@ const getCurrentAdmin = async (req, res) => {
 };
 
 const logoutAdmin = (req, res) => {
-  res.clearCookie("token", {
+  res.clearCookie("admin_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite:
