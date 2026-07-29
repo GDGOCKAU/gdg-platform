@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import gdgLogoImg from "./assets/gdg-logo.png";
 
+
 function GDGLogo() {
   return (
     <div className="flex items-center gap-3">
@@ -46,24 +47,48 @@ export default function Login({ setIsAuthenticated }) {
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMessage("");
 
-    const validUser = "admin";
-    const validCode = "123456";
-
     if (!username.trim() || !accessCode.trim()) {
-      setErrorMessage("Please fill in both Username and Access Code.");
+      setErrorMessage(
+        "Please fill in both Username and Password."
+      );
       return;
     }
 
-    if (username === validUser && accessCode === validCode) {
-      // 2. Unlock the app!
-      setIsAuthenticated(true); 
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/admin/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            user_name: username.trim(),
+            password: accessCode
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(
+          data.message || "Login failed."
+        );
+        return;
+      }
+
+      setIsAuthenticated(true);
       navigate("/admin/overview");
-    } else {
-      setErrorMessage("The information entered is not correct. Please check your credentials.");
+    } catch (error) {
+      setErrorMessage(
+        "Unable to connect to the server."
+      );
     }
   };
 
@@ -192,7 +217,7 @@ export default function Login({ setIsAuthenticated }) {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-[#3C4043]" style={{ fontFamily: "'Roboto', sans-serif" }}>
-                  Access Code
+                  Password
                 </label>
                 <input
                   type="password"
@@ -200,8 +225,7 @@ export default function Login({ setIsAuthenticated }) {
                   onChange={(e) => setAccessCode(e.target.value)}
                   onFocus={() => setFocusedField("accessCode")}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="Enter 6-digit code"
-                  maxLength={6}
+                  placeholder="Enter your password"
                   className="w-full px-4 py-3 text-[15px] text-[#1C1B1F] bg-white rounded-[8px] outline-none transition-all duration-150 tracking-widest"
                   style={{
                     border: focusedField === "accessCode" ? "2px solid #3A7CF5" : "1.5px solid #E0E0E0",

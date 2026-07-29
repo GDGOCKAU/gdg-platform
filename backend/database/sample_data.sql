@@ -51,7 +51,7 @@ VALUES
 -- =========================================================
 INSERT INTO users (user_name, access_code, role, theme)
 VALUES
-    ('admin_gdg', '999999', 'Admin', 'Dark');
+    ('admin', '9999', 'Admin', 'Dark');
 
 -- =========================================================
 -- Problems

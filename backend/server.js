@@ -75,6 +75,7 @@ const homeRoutes = require("./routes/homeRoutes");
 const submissionRoutes = require("./routes/submissionRoutes");
 const judgeRoutes = require("./routes/judgeRoutes");
 const userRoutes = require("./routes/teamRoutes");
+const adminAuthRoutes = require("./routes/adminAuthRoutes");
 
 // =======================================================
 // ===================== API Routes =======================
@@ -86,6 +87,7 @@ app.use("/api/home", homeRoutes);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/judge", judgeRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/admin/auth", adminAuthRoutes);
 
 const PORT = process.env.PORT || 5000;
 
