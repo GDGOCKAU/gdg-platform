@@ -1,6 +1,7 @@
+const pool = require("../config/database");
 const { verifyToken } = require("../utils/jwt");
 
-const participantAuthMiddleware = (req, res, next) => {
+const participantAuthMiddleware = async (req, res, next) => {
   try {
     const token = req.cookies.participant_token;
 
@@ -23,12 +24,23 @@ const participantAuthMiddleware = (req, res, next) => {
 
     req.user = decoded;
 
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      message: "Invalid or expired participant token",
-    });
-  }
+    await pool.query(
+        `
+            UPDATE teams
+            SET last_seen_at = CURRENT_TIMESTAMP
+            WHERE team_id = $1
+        `,
+        [decoded.team_id]
+        );
+
+        next();
+    } catch (error) {
+        console.error("Participant auth error:", error);
+
+        return res.status(401).json({
+        message: "Invalid or expired participant token",
+        });
+    }
 };
 
 const getCurrentUser = async (req, res) => {

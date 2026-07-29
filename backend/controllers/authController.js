@@ -35,6 +35,14 @@ const login = async (req, res) => {
     }
 
     const team = result.rows[0];
+    await pool.query(
+      `
+        UPDATE teams
+        SET last_seen_at = CURRENT_TIMESTAMP
+        WHERE team_id = $1
+      `,
+      [team.team_id]
+    );
 
     const token = generateToken({
         team_id: team.team_id,
