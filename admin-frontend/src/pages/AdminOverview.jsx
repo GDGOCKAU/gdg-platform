@@ -56,42 +56,369 @@ const TEAM_COLORS = [
 
 // Modals 
 
-function AnnouncementModal({ onClose, darkMode }) {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "rgba(28,27,31,0.45)", backdropFilter: "blur(3px)" }}>
-      <div className={`flex flex-col w-[480px] rounded-[24px] shadow-2xl ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
-        <div className={`flex items-center justify-between px-7 pt-7 pb-5 border-b ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(58,124,245,0.15)' : '#E8F0FE' }}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 8H14M4 12H10" stroke="#3A7CF5" strokeWidth="1.5" strokeLinecap="round" />
-                <rect x="2" y="3" width="14" height="12" rx="2" stroke="#3A7CF5" strokeWidth="1.5" />
-              </svg>
+function AnnouncementModal({
+    onClose,
+    darkMode,
+  }) {
+    const [title, setTitle] = useState("");
+    const [message, setMessage] = useState("");
+    const [submitError, setSubmitError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const [competitions, setCompetitions] = useState([]);
+    const [competitionId, setCompetitionId] = useState("");
+    const [loadingCompetitions, setLoadingCompetitions] =
+      useState(true);
+
+    const handlePublish = async () => {
+      if (!title.trim() || !message.trim()) {
+        setSubmitError(
+          "Please enter both title and message."
+        );
+        return;
+      }
+
+      if (!competitionId) {
+        setSubmitError("Please select a competition.");
+        return;
+      }
+
+      try {
+        setSubmitting(true);
+        setSubmitError("");
+
+        const response = await fetch(
+          "http://localhost:5000/api/admin/overview/announcements",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              competition_id: Number(competitionId),
+              title: title.trim(),
+              message: message.trim(),
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Failed to publish announcement"
+          );
+        }
+
+        onClose();
+      } catch (error) {
+        console.error("Publish announcement error:", error);
+        setSubmitError(error.message);
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    useEffect(() => {
+      const fetchCompetitions = async () => {
+        try {
+          const response = await fetch(
+            "http://localhost:5000/api/admin/overview/competitions",
+            {
+              credentials: "include",
+            }
+          );
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data.message || "Failed to load competitions"
+            );
+          }
+
+          setCompetitions(data.competitions || []);
+
+          const activeCompetition =
+            data.competitions?.find(
+              (competition) =>
+                competition.status === "Active"
+            );
+
+          if (activeCompetition) {
+            setCompetitionId(
+              String(activeCompetition.competition_id)
+            );
+          } else if (data.competitions?.length > 0) {
+            setCompetitionId(
+              String(data.competitions[0].competition_id)
+            );
+          }
+        } catch (error) {
+          setSubmitError(error.message);
+        } finally {
+          setLoadingCompetitions(false);
+        }
+      };
+
+      fetchCompetitions();
+    }, []);
+
+    return (
+      <div
+        className="fixed inset-0 flex items-center justify-center z-50"
+        style={{
+          backgroundColor: "rgba(28,27,31,0.45)",
+          backdropFilter: "blur(3px)",
+        }}
+      >
+        <div
+          className={`flex flex-col w-[480px] rounded-[24px] shadow-2xl ${
+            darkMode
+              ? "bg-slate-900 border border-slate-800"
+              : "bg-white"
+          }`}
+        >
+          <div
+            className={`flex items-center justify-between px-7 pt-7 pb-5 border-b ${
+              darkMode
+                ? "border-slate-800"
+                : "border-[#F1F3F4]"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-[10px] flex items-center justify-center"
+                style={{
+                  backgroundColor: darkMode
+                    ? "rgba(58,124,245,0.15)"
+                    : "#E8F0FE",
+                }}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 18 18"
+                  fill="none"
+                >
+                  <path
+                    d="M4 8H14M4 12H10"
+                    stroke="#3A7CF5"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+
+                  <rect
+                    x="2"
+                    y="3"
+                    width="14"
+                    height="12"
+                    rx="2"
+                    stroke="#3A7CF5"
+                    strokeWidth="1.5"
+                  />
+                </svg>
+              </div>
+
+              <h2
+                className={`text-[18px] font-bold font-['DM_Sans'] ${
+                  darkMode
+                    ? "text-white"
+                    : "text-[#1C1B1F]"
+                }`}
+              >
+                Broadcast Announcement
+              </h2>
             </div>
-            <h2 className={`text-[18px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Broadcast Announcement</h2>
+
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                darkMode
+                  ? "hover:bg-slate-800"
+                  : "hover:bg-[#F1F3F4]"
+              }`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+              >
+                <path
+                  d="M4 4L12 12M12 4L4 12"
+                  stroke={darkMode ? "#94A3B8" : "#5F6368"}
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
           </div>
-          <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-[#F1F3F4]'}`}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke={darkMode ? "#94A3B8" : "#5F6368"} strokeWidth="1.6" strokeLinecap="round" /></svg>
-          </button>
-        </div>
-        <div className="flex flex-col gap-5 px-7 py-6">
-          <div className="flex flex-col gap-1.5">
-            <label className={`text-[13px] font-medium font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>Title</label>
-            <input type="text" placeholder="e.g., Update on Problem B" className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none border ${darkMode ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-[#E0E0E0] text-[#1C1B1F]'}`} />
+
+          <div className="flex flex-col gap-5 px-7 py-6">
+            {submitError && (
+              <div
+                className={`px-4 py-3 rounded-[8px] border text-[13px] font-['Roboto'] ${
+                  darkMode
+                    ? "bg-red-950/30 border-red-900/50 text-red-400"
+                    : "bg-[#FFEBEE] border-[#FFCDD2] text-[#C62828]"
+                }`}
+              >
+                {submitError}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                className={`text-[13px] font-medium font-['Roboto'] ${
+                  darkMode
+                    ? "text-slate-300"
+                    : "text-[#3C4043]"
+                }`}
+              >
+                Competition
+              </label>
+
+              <select
+                value={competitionId}
+                onChange={(event) =>
+                  setCompetitionId(event.target.value)
+                }
+                disabled={loadingCompetitions || submitting}
+                className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none border ${
+                  darkMode
+                    ? "bg-slate-950 border-slate-700 text-white"
+                    : "bg-white border-[#E0E0E0] text-[#1C1B1F]"
+                }`}
+              >
+                {loadingCompetitions && (
+                  <option value="">
+                    Loading competitions...
+                  </option>
+                )}
+
+                {!loadingCompetitions &&
+                  competitions.length === 0 && (
+                    <option value="">
+                      No competitions available
+                    </option>
+                  )}
+
+                {competitions.map((competition) => (
+                  <option
+                    key={competition.competition_id}
+                    value={competition.competition_id}
+                  >
+                    {competition.competition_name}
+                    {competition.status
+                      ? ` — ${competition.status}`
+                      : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                className={`text-[13px] font-medium font-['Roboto'] ${
+                  darkMode
+                    ? "text-slate-300"
+                    : "text-[#3C4043]"
+                }`}
+              >
+                Title
+              </label>
+
+              <input
+                type="text"
+                value={title}
+                onChange={(event) =>
+                  setTitle(event.target.value)
+                }
+                placeholder="e.g., Update on Problem B"
+                maxLength={150}
+                disabled={submitting}
+                className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none border ${
+                  darkMode
+                    ? "bg-slate-950 border-slate-700 text-white"
+                    : "bg-white border-[#E0E0E0] text-[#1C1B1F]"
+                }`}
+              />
+
+              <span
+                className={`text-[11px] text-right font-['Roboto'] ${
+                  darkMode
+                    ? "text-slate-500"
+                    : "text-[#9AA0A6]"
+                }`}
+              >
+                {title.length}/150
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label
+                className={`text-[13px] font-medium font-['Roboto'] ${
+                  darkMode
+                    ? "text-slate-300"
+                    : "text-[#3C4043]"
+                }`}
+              >
+                Message
+              </label>
+
+              <textarea
+                rows={4}
+                value={message}
+                onChange={(event) =>
+                  setMessage(event.target.value)
+                }
+                placeholder="Write your announcement here..."
+                disabled={submitting}
+                className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none resize-none border ${
+                  darkMode
+                    ? "bg-slate-950 border-slate-700 text-white"
+                    : "bg-white border-[#E0E0E0] text-[#1C1B1F]"
+                }`}
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className={`text-[13px] font-medium font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>Message</label>
-            <textarea rows={4} placeholder="Write your announcement here..." className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none resize-none border ${darkMode ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-[#E0E0E0] text-[#1C1B1F]'}`} />
+
+          <div
+            className={`flex justify-end gap-3 px-7 py-5 border-t ${
+              darkMode
+                ? "border-slate-800"
+                : "border-[#F1F3F4]"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className={`px-5 py-2.5 rounded-[10px] text-[14px] font-semibold border font-['DM_Sans'] disabled:opacity-60 ${
+                darkMode
+                  ? "border-slate-700 text-slate-300 hover:bg-slate-800"
+                  : "border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]"
+              }`}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={submitting}
+              className="px-6 py-2.5 rounded-[10px] text-[14px] font-semibold text-white bg-[#3A7CF5] hover:bg-[#2563EB] disabled:opacity-60 disabled:cursor-not-allowed font-['DM_Sans']"
+            >
+              {submitting ? "Publishing..." : "Publish Now"}
+            </button>
           </div>
-        </div>
-        <div className={`flex justify-end gap-3 px-7 py-5 border-t ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
-          <button onClick={onClose} className={`px-5 py-2.5 rounded-[10px] text-[14px] font-semibold border font-['DM_Sans'] ${darkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}>Cancel</button>
-          <button onClick={onClose} className="px-6 py-2.5 rounded-[10px] text-[14px] font-semibold text-white bg-[#3A7CF5] hover:bg-[#2563EB] font-['DM_Sans']">Publish Now</button>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
 function ViewAllModal({ onClose, darkMode, submissions }) {
   return (
@@ -492,7 +819,7 @@ export default function AdminOverview() {
       </div>
 
       {/* Render Modals */}
-      {showAnnouncement && <AnnouncementModal onClose={() => setShowAnnouncement(false)} darkMode={darkMode} />}
+      {showAnnouncement && (<AnnouncementModal onClose={() => setShowAnnouncement(false)} darkMode={darkMode} />)}
       {showAllFeeds && <ViewAllModal onClose={() => setShowAllFeeds(false)} darkMode={darkMode} submissions={filteredSubmissions} />}
     </div>
   );
