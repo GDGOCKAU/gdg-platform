@@ -283,10 +283,10 @@ export default function TeamManagement() {
         {/* Table header */}
         <div
           className={`grid px-6 py-3.5 border-b ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`}
-          style={{ gridTemplateColumns: "1fr 160px 110px 120px 100px", gap: "16px" }}
+          style={{ gridTemplateColumns: "1fr 160px 120px 100px", gap: "16px" }}
         >
-          {["Team Name", "Access Code", "Members", "Status", "Actions"].map((h, i) => (
-            <div key={h} className="text-[11px] font-bold uppercase tracking-wider font-['Roboto'] text-[#9AA0A6]" style={{ textAlign: i === 4 ? "center" : "left" }}>
+          {["Team Name", "Access Code", "Status", "Actions"].map((h, i) => (
+            <div key={h} className="text-[11px] font-bold uppercase tracking-wider font-['Roboto'] text-[#9AA0A6]" style={{ textAlign: i === 3 ? "center" : "left" }}>
               {h}
             </div>
           ))}
@@ -308,7 +308,7 @@ export default function TeamManagement() {
               <div
                 key={team.id}
                 className={`grid px-6 py-4 items-center transition-colors group ${darkMode ? 'hover:bg-slate-800/50' : 'hover:bg-[#FAFAFA]'} ${idx < filtered.length - 1 ? (darkMode ? 'border-b border-slate-800' : 'border-b border-[#F8F9FA]') : ''}`}
-                style={{ gridTemplateColumns: "1fr 160px 110px 120px 100px", gap: "16px" }}
+                style={{ gridTemplateColumns: "1fr 160px 120px 100px", gap: "16px" }}
               >
                 {/* Team name */}
                 <div className="flex items-center gap-3">
@@ -336,22 +336,6 @@ export default function TeamManagement() {
                       <path d="M1 5v7a2 2 0 0 0 2 2h7" stroke={darkMode ? "#94A3B8" : "#9AA0A6"} strokeWidth="1.4" strokeLinecap="round" />
                     </svg>
                   </button>
-                </div>
-
-                {/* Members */}
-                <div className="flex items-center gap-1.5">
-                  <div className="flex -space-x-1.5">
-                    {Array.from({ length: team.members }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[9px] font-bold text-white font-['DM_Sans'] ${darkMode ? 'border-slate-900' : 'border-white'}`}
-                        style={{ backgroundColor: ["#4285F4", "#34A853", "#EA4335", "#FBBC04"][i % 4] }}
-                      >
-                        {String.fromCharCode(65 + i)}
-                      </div>
-                    ))}
-                  </div>
-                  <span className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#5F6368]'}`}>{team.members}</span>
                 </div>
 
                 {/* Status */}
