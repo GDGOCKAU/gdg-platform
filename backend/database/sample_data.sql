@@ -88,7 +88,7 @@ VALUES
 -- =========================================================
 INSERT INTO users (user_name, password, role, theme)
 VALUES
-    ('admin', '$2b$12$jlo/11rVY7K7vrAHFfl0c.UML.umakErP/d0f7wmQGV2OGP89l7Yy', 'Admin', 'Dark');
+    ('test', '$2b$12$gXFTUaYA77QE4TSx5/YdyeED4naYvzWDVRE72JPJmUAv8VppnA6ha', 'Admin', 'Dark');
 
 -- =========================================================
 -- Problems

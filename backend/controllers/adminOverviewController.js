@@ -143,6 +143,112 @@ const getAdminOverview = async (req, res) => {
   }
 };
 
+const createAnnouncement = async (req, res) => {
+  try {
+    const { competition_id, title, message } = req.body;
+
+    const competitionId = Number(competition_id);
+
+    if (!competitionId) {
+      return res.status(400).json({
+        message: "Competition ID is required",
+      });
+    }
+
+    if (!title?.trim() || !message?.trim()) {
+      return res.status(400).json({
+        message: "Title and message are required",
+      });
+    }
+
+    if (title.trim().length > 150) {
+      return res.status(400).json({
+        message: "Title must not exceed 150 characters",
+      });
+    }
+
+    const competitionResult = await pool.query(
+      `
+        SELECT competition_id
+        FROM competitions
+        WHERE competition_id = $1
+      `,
+      [competitionId]
+    );
+
+    if (competitionResult.rows.length === 0) {
+      return res.status(404).json({
+        message: "Competition not found",
+      });
+    }
+
+    const result = await pool.query(
+      `
+        INSERT INTO announcements
+        (
+          competition_id,
+          created_by,
+          title,
+          message,
+          is_published
+        )
+        VALUES ($1, $2, $3, $4, TRUE)
+
+        RETURNING
+          announcement_id,
+          competition_id,
+          created_by,
+          title,
+          message,
+          is_published,
+          created_at
+      `,
+      [
+        competitionId,
+        req.user.user_id,
+        title.trim(),
+        message.trim(),
+      ]
+    );
+
+    return res.status(201).json({
+      message: "Announcement published successfully",
+      announcement: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Create announcement error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+const getAvailableCompetitions = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        competition_id,
+        competition_name,
+        status,
+        started_at,
+        ended_at
+      FROM competitions
+      ORDER BY started_at DESC
+    `);
+
+    return res.status(200).json({
+      competitions: result.rows,
+    });
+  } catch (error) {
+    console.error("Get competitions error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
 module.exports = {
-  getAdminOverview,
+  getAdminOverview, createAnnouncement, getAvailableCompetitions,
 };

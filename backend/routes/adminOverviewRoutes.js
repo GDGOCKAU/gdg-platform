@@ -1,6 +1,6 @@
 const express = require("express");
 
-const {getAdminOverview, } = require("../controllers/adminOverviewController");
+const {getAdminOverview, createAnnouncement, getAvailableCompetitions } = require("../controllers/adminOverviewController");
 
 const authMiddleware = require("../middleware/adminAuthMiddleware");
 const requireAdmin = require("../middleware/requireAdmin");
@@ -8,5 +8,7 @@ const requireAdmin = require("../middleware/requireAdmin");
 const router = express.Router();
 
 router.get("/",authMiddleware, requireAdmin, getAdminOverview);
+router.post("/announcements", authMiddleware, requireAdmin, createAnnouncement);
+router.get("/competitions",authMiddleware, requireAdmin, getAvailableCompetitions);
 
 module.exports = router;
