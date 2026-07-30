@@ -98,4 +98,4 @@ const getCurrentUser = async (req, res) => {
     });
   }
 };
-module.exports = participantAuthMiddleware, getCurrentUser;
+module.exports = { participantAuthMiddleware, getCurrentUser};
