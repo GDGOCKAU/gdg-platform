@@ -1,5 +1,5 @@
 const express = require("express");
-const participantAuthMiddleware = require("../middleware/participantAuthMiddleware");
+const { participantAuthMiddleware } = require("../middleware/participantAuthMiddleware");
 const { login, getCurrentUser } = require("../controllers/authController");
 
 const router = express.Router();

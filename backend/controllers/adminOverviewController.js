@@ -70,6 +70,39 @@ const getAdminOverview = async (req, res) => {
       [competitionId]
     );
 
+    const recentSubmissionsResult = await pool.query(
+    `
+      SELECT
+        s.id AS submission_id,
+        s.submitted_at,
+        s.status,
+        s.language_name,
+
+        t.team_id,
+        t.team_name,
+
+        p.problem_id,
+        p.problem_code,
+        p.problem_name
+
+      FROM submissions s
+
+      INNER JOIN teams t
+        ON t.team_id = s.team_id
+
+      INNER JOIN problems p
+        ON p.problem_id = s.problem_id
+
+      WHERE t.competition_id = $1
+        AND p.competition_id = $1
+
+      ORDER BY s.submitted_at DESC
+
+      LIMIT 50
+    `,
+    [competitionId]
+  );
+
     const competition = competitionResult.rows[0];
     const registeredTeams = registeredTeamsResult.rows[0].registered_teams;
 
@@ -84,6 +117,10 @@ const getAdminOverview = async (req, res) => {
     const successRate =
       totalSubmissions > 0 ? Number(((acceptedSubmissions / totalSubmissions) * 100).toFixed(1)) : 0;
 
+    const recentSubmissions = recentSubmissionsResult.rows;
+
+
+
     return res.status(200).json({
       competition,
       stats: {
@@ -95,6 +132,7 @@ const getAdminOverview = async (req, res) => {
         submissions_last_five_minutes:
           submissionsLastFiveMinutes,
       },
+      recent_submissions: recentSubmissions,
     });
   } catch (error) {
     console.error("Get admin overview error:", error);

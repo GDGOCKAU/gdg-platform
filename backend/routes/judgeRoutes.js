@@ -1,5 +1,5 @@
 const express = require("express");
-const authMiddleware = require("../middleware/participantAuthMiddleware");
+const { participantAuthMiddleware: authMiddleware } = require("../middleware/participantAuthMiddleware");
 const { testBatch } = require("../controllers/judgeController");
 
 const router = express.Router();
