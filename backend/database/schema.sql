@@ -110,6 +110,8 @@ CREATE TABLE problems (
     points_assigned     DOUBLE PRECISION NOT NULL
                         CHECK (points_assigned >= 0),
 
+    is_published         BOOLEAN NOT NULL DEFAULT FALSE,
+
     CONSTRAINT fk_problems_competition
         FOREIGN KEY (competition_id)
         REFERENCES competitions (competition_id)
@@ -131,7 +133,6 @@ CREATE TABLE problems (
     CONSTRAINT chk_memory_limit_mb
         CHECK (memory_limit_mb > 0)
 );
-
 -- =========================================================
 -- 5. Test Cases
 -- Composite primary key: one problem can have many tests.
