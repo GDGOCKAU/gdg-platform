@@ -110,7 +110,7 @@ CREATE TABLE problems (
     points_assigned     DOUBLE PRECISION NOT NULL
                         CHECK (points_assigned >= 0),
 
-    is_published         BOOLEAN NOT NULL DEFAULT FALSE,
+    is_published         BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT fk_problems_competition
         FOREIGN KEY (competition_id)

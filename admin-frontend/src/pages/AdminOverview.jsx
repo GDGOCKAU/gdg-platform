@@ -4,19 +4,24 @@ import { useOutletContext } from 'react-router-dom';
 // Constants & Status Badges 
 
 const statusConfig = {
-  "ACCEPTED":            { bg: "#E8F5E9", text: "#2E7D32", dot: "#34A853" },
-  "WRONG ANSWER":        { bg: "#FFEBEE", text: "#B71C1C", dot: "#EA4335" },
-  "TIME LIMIT EXCEEDED": { bg: "#FFF8E1", text: "#E65100", dot: "#FBBC04" },
-  "COMPILATION ERROR":   { bg: "#F3E5F5", text: "#6A1B9A", dot: "#9C27B0" },
-  "PENDING":             { bg: "#F1F3F4", text: "#5F6368", dot: "#9AA0A6" },
+ACCEPTED: {bg: "#E8F5E9", text: "#2E7D32", dot: "#34A853",},
+  "WRONG ANSWER": {bg: "#FFEBEE", text: "#B71C1C", dot: "#EA4335",},
+  "TIME LIMIT EXCEEDED": {bg: "#FFF8E1", text: "#E65100", dot: "#FBBC04",},
+  "COMPILATION ERROR": {bg: "#F3E5F5", text: "#6A1B9A", dot: "#9C27B0",},
+  "RUNTIME ERROR": {bg: "#FFEBEE", text: "#B71C1C", dot: "#EA4335",},
+  QUEUED: {bg: "#F1F3F4", text: "#5F6368", dot: "#9AA0A6",},
+  JUDGING: {bg: "#E8F0FE", text: "#1967D2", dot: "#4285F4",},
+  PENDING: {bg: "#F1F3F4", text: "#5F6368", dot: "#9AA0A6",},
 };
 
 function StatusBadge({ status }) {
-  const cfg = statusConfig[status] || statusConfig["PENDING"];
+  const normalizedStatus = status?.toUpperCase() || "PENDING";
+
+  const cfg = statusConfig[normalizedStatus] || statusConfig.PENDING;
   return (
     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap font-['Roboto']" style={{ backgroundColor: cfg.bg, color: cfg.text }}>
       <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.dot }} />
-      {status}
+      {normalizedStatus}
     </div>
   );
 }
@@ -39,14 +44,14 @@ function Sparkline({ color, points }) {
   );
 }
 
-const ALL_SUBMISSIONS = [
-  { id: 1, time: "14:52:08", team: "Code_Knights",  problem: "B", problemFull: "Array Manipulation",        lang: "Python 3", status: "ACCEPTED",           avatar: "#4285F4" },
-  { id: 2, time: "14:51:33", team: "Null_Pointers", problem: "A", problemFull: "Binary Search Tree",        lang: "C++17",    status: "WRONG ANSWER",       avatar: "#34A853" },
-  { id: 3, time: "14:50:55", team: "Byte_Me",       problem: "C", problemFull: "Dynamic Programming Trees", lang: "Java 17",  status: "TIME LIMIT EXCEEDED", avatar: "#FBBC04" },
-  { id: 4, time: "14:49:17", team: "Py_Masters",    problem: "B", problemFull: "Array Manipulation",        lang: "Python 3", status: "ACCEPTED",           avatar: "#EA4335" },
-  { id: 5, time: "14:48:44", team: "KAU_Hackers",   problem: "A", problemFull: "Binary Search Tree",        lang: "C",        status: "COMPILATION ERROR",  avatar: "#9C27B0" },
-  { id: 6, time: "14:47:02", team: "Code_Knights",  problem: "A", problemFull: "Binary Search Tree",        lang: "Python 3", status: "ACCEPTED",           avatar: "#4285F4" },
-  { id: 7, time: "14:45:30", team: "Null_Pointers", problem: "A", problemFull: "Binary Search Tree",        lang: "C++17",    status: "PENDING",            avatar: "#34A853" },
+const TEAM_COLORS = [
+  "#4285F4",
+  "#34A853",
+  "#EA4335",
+  "#FBBC04",
+  "#9C27B0",
+  "#FF7043",
+  "#78909C",
 ];
 
 // Modals 
@@ -146,8 +151,11 @@ export default function AdminOverview() {
 
   useEffect(() => {
     const fetchOverview = async () => {
+      
       try {
-        setOverviewLoading(true);
+        if (!overviewData) {
+          setOverviewLoading(true);
+        }
         setOverviewError("");
 
         const response = await fetch(
@@ -176,6 +184,16 @@ export default function AdminOverview() {
     };
 
     fetchOverview();
+
+    const intervalId = setInterval(
+        fetchOverview,
+        5000
+      );
+
+      return () => {
+        clearInterval(intervalId);
+      };
+      
   }, []);
 
   const isAllSubmissions = !filterAcceptedOnly && !filterErrorsWarnings;
@@ -187,16 +205,53 @@ export default function AdminOverview() {
 
   const stats = overviewData?.stats;
 
+  const submissions = useMemo(() => {
+    const rows = overviewData?.recent_submissions || [];
+
+    return rows.map((submission) => ({
+      id: submission.submission_id,
+
+      time: new Date(
+        submission.submitted_at
+      ).toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+
+      team: submission.team_name,
+
+      problem:
+        submission.problem_code || "—",
+
+      problemFull:
+        submission.problem_name,
+
+      lang:
+        submission.language_name || "Unknown",
+
+      status:
+        submission.status || "Queued",
+
+      avatar:
+        TEAM_COLORS[
+          (submission.team_id - 1) %
+            TEAM_COLORS.length
+        ],
+    }));
+  }, [overviewData]);
+
   // Filter the Data
   const filteredSubmissions = useMemo(() => {
-    return ALL_SUBMISSIONS.filter(sub => {
+    return submissions.filter((sub) => {
       if (isAllSubmissions) return true;
-      if (filterAcceptedOnly && sub.status === "ACCEPTED") return true;
-      const errorStatuses = ["WRONG ANSWER", "TIME LIMIT EXCEEDED", "COMPILATION ERROR"];
-      if (filterErrorsWarnings && errorStatuses.includes(sub.status)) return true;
+      if (filterAcceptedOnly && sub.status?.toUpperCase() === "ACCEPTED") return true;
+      const errorStatuses = ["WRONG ANSWER", "TIME LIMIT EXCEEDED", "COMPILATION ERROR", "RUNTIME ERROR",];
+      if (filterErrorsWarnings && errorStatuses.includes(sub.status?.toUpperCase())) return true;
       return false;
     });
-  }, [filterAcceptedOnly, filterErrorsWarnings, isAllSubmissions]);
+  }, [submissions, filterAcceptedOnly, filterErrorsWarnings, isAllSubmissions,]);
 
   return (
     <div className="flex flex-col gap-7 relative">

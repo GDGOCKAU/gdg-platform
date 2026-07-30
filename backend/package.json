@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "db:setup": "node database/setup.js",
+    "db:setup:schema": "node database/setup.js --schema-only"
   },
   "keywords": [],
   "author": "",
