@@ -73,7 +73,7 @@ const getAdminOverview = async (req, res) => {
     const recentSubmissionsResult = await pool.query(
     `
       SELECT
-        s.id AS submission_id,
+        s.submission_id,
         s.submitted_at,
         s.status,
         s.language_name,
