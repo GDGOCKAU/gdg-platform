@@ -78,6 +78,7 @@ const userRoutes = require("./routes/teamRoutes");
 const adminAuthRoutes = require("./routes/adminAuthRoutes");
 const adminOverviewRoutes = require("./routes/adminOverviewRoutes");
 const adminTeamRoutes = require("./routes/adminTeamRoutes");
+const adminSettingsRoutes = require("./routes/adminSettingsRoutes");
 // =======================================================
 // ===================== API Routes =======================
 // =======================================================
@@ -91,6 +92,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/overview", adminOverviewRoutes);
 app.use("/api/admin/teams", adminTeamRoutes);
+app.use("/api/admin/settings", adminSettingsRoutes);
 
 
 const PORT = process.env.PORT || 5000;
