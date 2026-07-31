@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import gdgLogoImg from "./assets/gdg-logo.png";
+
+
 
 function GDGLogo({ darkMode }) {
   return (
@@ -166,7 +169,20 @@ function ProblemCell({ result, darkMode }) {
 
 export default function LeaderboardView({ darkMode, setDarkMode }) {
   const navigate = useNavigate();
+const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    axios.get("http://localhost:5000/api/leaderboard")
+      .then((response) => {
+        setTeams(response.data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("خطأ في جلب البيانات:", error);
+        setLoading(false);
+      });
+  }, []);
   const bgStyle = darkMode ? "#121212" : "#F8F9FA";
   const navBg = darkMode ? "#1E1E1E" : "#FFFFFF";
   const cardBg = darkMode ? "#1E1E1E" : "#FFFFFF";

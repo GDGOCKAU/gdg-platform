@@ -2,13 +2,12 @@ const pool = require("../config/database.js");
 const { judgeSubmission } = require("../services/judgeWorker");
 const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-const {createSubmissionBatch, getSubmissionBatch, } = require("../services/judge0Service");
+const { createSubmissionBatch, getSubmissionBatch } = require("../services/judge0Service");
 
 const createSubmission = async (req, res) => {
   try {
     const teamId = req.user.team_id;
     const competitionId = req.user.competition_id;
-
     const {
       problemId,
       languageId,
