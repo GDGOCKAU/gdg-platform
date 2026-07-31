@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useEffect } from "react";
+import axios from "axios";
+
+
+const api = axios.create({
+  baseURL: "http://localhost:5000/api/admin",
+  withCredentials: true,
+});
 
 // Data & Helpers 
-
-const INITIAL_TEAMS = [
-  { id: 1, name: "Code_Knights",  code: "GDG-8372", members: 3, status: "Active",   joined: "Jul 14, 2025", avatar: "#4285F4" },
-  { id: 2, name: "Null_Pointers", code: "GDG-9104", members: 2, status: "Active",   joined: "Jul 14, 2025", avatar: "#34A853" },
-  { id: 3, name: "Py_Masters",    code: "GDG-4451", members: 3, status: "Active",   joined: "Jul 13, 2025", avatar: "#EA4335" },
-  { id: 4, name: "Byte_Me",       code: "GDG-7763", members: 2, status: "Inactive", joined: "Jul 13, 2025", avatar: "#FBBC04" },
-  { id: 5, name: "KAU_Hackers",   code: "GDG-2290", members: 3, status: "Pending",  joined: "Jul 15, 2025", avatar: "#9C27B0" },
-];
 
 const STATUS_STYLE = {
   Active:   { bg: "#E8F5E9", text: "#2E7D32", dot: "#34A853", darkBg: "rgba(52,168,83,0.15)", darkText: "#4ADE80" },
   Inactive: { bg: "#F1F3F4", text: "#5F6368", dot: "#9AA0A6", darkBg: "rgba(148,163,184,0.15)", darkText: "#94A3B8" },
   Pending:  { bg: "#FFF8E1", text: "#E65100", dot: "#FBBC04", darkBg: "rgba(251,188,4,0.15)", darkText: "#FBBF24" },
 };
+
+const AVATAR_COLORS = ["#4285F4", "#EA4335", "#34A853", "#FBBC04", "#9C27B0"];
+
+//color for eeach team
+function colorForName(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 function generateCode() {
   return "GDG-" + Math.floor(1000 + Math.random() * 9000);
@@ -66,6 +77,8 @@ function AddTeamModal({ onClose, onAdd, darkMode }) {
   const [codeFocus, setCodeFocus] = useState(false);
   const [shake, setShake] = useState(false);
 
+
+  //add team 
   const handleSubmit = () => {
     if (!name.trim() || !code.trim()) {
       setShake(true);
@@ -163,6 +176,9 @@ function AddTeamModal({ onClose, onAdd, darkMode }) {
                 </button>
               ))}
             </div>
+            <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>
+              Note: not sent to the backend yet — the teams table has no members column.
+            </span>
           </div>
         </div>
 
@@ -189,39 +205,195 @@ function AddTeamModal({ onClose, onAdd, darkMode }) {
   );
 }
 
+function EditTeamModal({ team, onClose, onEdit, darkMode }) {
+  const [name, setName] = useState(team.name);
+  const [code, setCode] = useState(team.code);
+  const [nameFocus, setNameFocus] = useState(false);
+  const [codeFocus, setCodeFocus] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  const handleSubmit = () => {
+    if (!name.trim() || !code.trim()) {
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
+      return;
+    }
+    onEdit(name.trim(), code.trim());
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "rgba(28,27,31,0.45)", backdropFilter: "blur(3px)" }}>
+      <div
+        className={`flex flex-col w-[480px] rounded-[24px] shadow-2xl ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
+        style={{ animation: shake ? "modalShake 0.35s ease" : undefined }}
+      >
+        {/* Header */}
+        <div className={`flex items-center justify-between px-7 pt-7 pb-5 border-b ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(58,124,245,0.15)' : '#E8F0FE' }}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M12.5 2.5l3 3L6 15H3v-3L12.5 2.5Z" stroke="#3A7CF5" strokeWidth="1.5" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h2 className={`text-[18px] font-bold tracking-[-0.2px] font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Edit Team</h2>
+          </div>
+          <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-[#F1F3F4]'}`}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M4 4L12 12M12 4L4 12" stroke={darkMode ? "#94A3B8" : "#5F6368"} strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-col gap-5 px-7 py-6">
+          <div className="flex flex-col gap-1.5">
+            <label className={`text-[13px] font-medium font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>Team Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onFocus={() => setNameFocus(true)}
+              onBlur={() => setNameFocus(false)}
+              placeholder="e.g., Binary_Bosses"
+              className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none transition-all duration-150 font-['Roboto'] ${darkMode ? 'bg-slate-950 text-white placeholder-slate-600' : 'bg-white text-[#1C1B1F]'}`}
+              style={{ border: nameFocus ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}` }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className={`text-[13px] font-medium font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>Access Code</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={code}
+                onChange={e => setCode(e.target.value)}
+                onFocus={() => setCodeFocus(true)}
+                onBlur={() => setCodeFocus(false)}
+                placeholder="e.g., GDG-1234"
+                className={`flex-1 px-4 py-3 text-[14px] rounded-[8px] outline-none transition-all duration-150 tracking-wider font-['JetBrains_Mono'] ${darkMode ? 'bg-slate-950 text-white placeholder-slate-600' : 'bg-white text-[#1C1B1F]'}`}
+                style={{ border: codeFocus ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}` }}
+              />
+              <button
+                onClick={() => setCode(generateCode())}
+                className={`flex items-center gap-1.5 px-4 py-3 rounded-[8px] text-[13px] font-semibold whitespace-nowrap transition-all font-['DM_Sans'] ${darkMode ? 'hover:bg-blue-950/50' : 'hover:bg-[#E8F0FE]'}`}
+                style={{ border: "1.5px solid #3A7CF5", color: "#3A7CF5" }}
+              >
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 7a5 5 0 1 1 1.5 3.5" stroke="#3A7CF5" strokeWidth="1.4" strokeLinecap="round" />
+                  <path d="M2 10.5V7H5.5" stroke="#3A7CF5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Generate
+              </button>
+            </div>
+            <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>Share this code with the team to allow them to log in.</span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className={`flex items-center justify-end gap-3 px-7 py-5 border-t ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+          <button
+            onClick={onClose}
+            className={`px-5 py-2.5 rounded-[10px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] ${darkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-[10px] text-[14px] font-semibold text-white bg-[#3A7CF5] hover:bg-[#2563EB] transition-all active:scale-[0.97] font-['DM_Sans'] shadow-[0_2px_8px_rgba(58,124,245,0.35)]"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M4 7l2.5 2.5L10 5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main Component 
 
 export default function TeamManagement() {
   const { darkMode } = useOutletContext() || {};
-  const [teams, setTeams] = useState(INITIAL_TEAMS);
+
+  const [teams, setTeams] = useState([]);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [searchFocus, setSearchFocus] = useState(false);
 
-  const filtered = teams.filter(t =>
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    t.code.toLowerCase().includes(search.toLowerCase())
-  );
+  const fetchTeams = async () => {
+    try {
+      const response = await api.get("/teams");
+      setTeams(response.data.teams);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  //not error 
+  useEffect(() => {
+    fetchTeams();
+  }, []);
 
-  const handleAdd = (name, code, members) => {
-    const newTeam = {
-      id: Date.now(),
-      name,
-      code,
-      members,
-      status: "Pending",
-      joined: "Today",
-      avatar: ["#4285F4", "#EA4335", "#34A853", "#FBBC04", "#9C27B0"][Math.floor(Math.random() * 5)],
-    };
-    setTeams(prev => [newTeam, ...prev]);
+    const filtered = teams.filter(t =>
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.code.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const handleAdd = async (name, code) => {
+      try {
+        
+          await api.post("/teams", {
+              team_name: name,
+              access_code: code
+          });
+
+          fetchTeams();
+
+      } catch (error) {
+          console.error(error);
+      }
   };
 
-  const handleDelete = () => {
-    if (deleteTarget) {
-      setTeams(prev => prev.filter(t => t.id !== deleteTarget.id));
-      setDeleteTarget(null);
-    }
+  const handleEdit = async (name, code) => {
+      if (!editTarget) return;
+      try {
+
+          await api.patch(`/teams/${editTarget.id}`, {
+              team_name: name,
+              access_code: code
+          });
+
+          fetchTeams();
+
+      } catch (error) {
+          console.error(error);
+      }
+  };
+
+  const handleDelete = async () => {
+
+      if (!deleteTarget) return;
+
+      try {
+
+          await api.delete(
+              `/teams/${deleteTarget.id}`
+          );
+
+          fetchTeams();
+
+          setDeleteTarget(null);
+
+      } catch (error) {
+
+          console.error(error);
+
+      }
+
   };
 
   return (
@@ -312,7 +484,7 @@ export default function TeamManagement() {
               >
                 {/* Team name */}
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-[12px] font-bold flex-shrink-0 font-['DM_Sans']" style={{ backgroundColor: team.avatar }}>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-[12px] font-bold flex-shrink-0 font-['DM_Sans']" style={{ backgroundColor: colorForName(team.name) }}>
                     {team.name.slice(0, 2).toUpperCase()}
                   </div>
                   <div>
@@ -351,7 +523,7 @@ export default function TeamManagement() {
 
                 {/* Actions */}
                 <div className="flex items-center justify-center gap-2">
-                  <button className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-all border ${darkMode ? 'border-slate-700 hover:bg-slate-800' : 'border-[#E0E0E0] hover:bg-[#E8F0FE]'}`} title="Edit team">
+                  <button onClick={() => setEditTarget(team)} className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-all border ${darkMode ? 'border-slate-700 hover:bg-slate-800' : 'border-[#E0E0E0] hover:bg-[#E8F0FE]'}`} title="Edit team">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                       <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5Z" stroke={darkMode ? "#94A3B8" : "#5F6368"} strokeWidth="1.3" strokeLinejoin="round" />
                     </svg>
@@ -380,6 +552,7 @@ export default function TeamManagement() {
 
       {/* Modals */}
       {showAddModal && <AddTeamModal onClose={() => setShowAddModal(false)} onAdd={handleAdd} darkMode={darkMode} />}
+      {editTarget && <EditTeamModal team={editTarget} onClose={() => setEditTarget(null)} onEdit={handleEdit} darkMode={darkMode} />}
       {deleteTarget && <DeleteModal team={deleteTarget} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} darkMode={darkMode} />}
 
       <style>{`
