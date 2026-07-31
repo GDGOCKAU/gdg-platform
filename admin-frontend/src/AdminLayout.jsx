@@ -5,7 +5,7 @@ import AdminNavbar from './components/AdminNavbar';
 
 export default function AdminLayout({ darkMode, setDarkMode }) {
   return (
-    <div className={`w-full h-screen flex flex-col font-['Roboto'] overflow-hidden ${darkMode ? 'bg-slate-950 text-white' : 'bg-[#F8F9FA] text-[#1C1B1F]'}`}>
+    <div className={`w-full h-screen flex flex-col font-['Roboto'] overflow-hidden ${darkMode ? 'bg-neutral-950 text-white' : 'bg-[#F8F9FA] text-[#1C1B1F]'}`}>
       <div className="flex flex-1 overflow-hidden min-h-0">
         <AdminSidebar darkMode={darkMode} />
         <div className="flex flex-col flex-1 overflow-hidden min-h-0">

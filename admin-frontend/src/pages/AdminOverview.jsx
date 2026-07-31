@@ -175,14 +175,14 @@ function AnnouncementModal({
         <div
           className={`flex flex-col w-[480px] rounded-[24px] shadow-2xl ${
             darkMode
-              ? "bg-slate-900 border border-slate-800"
+              ? "bg-neutral-900 border border-neutral-800"
               : "bg-white"
           }`}
         >
           <div
             className={`flex items-center justify-between px-7 pt-7 pb-5 border-b ${
               darkMode
-                ? "border-slate-800"
+                ? "border-neutral-800"
                 : "border-[#F1F3F4]"
             }`}
           >
@@ -237,7 +237,7 @@ function AnnouncementModal({
               disabled={submitting}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                 darkMode
-                  ? "hover:bg-slate-800"
+                  ? "hover:bg-neutral-800"
                   : "hover:bg-[#F1F3F4]"
               }`}
             >
@@ -249,7 +249,7 @@ function AnnouncementModal({
               >
                 <path
                   d="M4 4L12 12M12 4L4 12"
-                  stroke={darkMode ? "#94A3B8" : "#5F6368"}
+                  stroke={darkMode ? "#A3A3A3" : "#5F6368"}
                   strokeWidth="1.6"
                   strokeLinecap="round"
                 />
@@ -274,7 +274,7 @@ function AnnouncementModal({
               <label
                 className={`text-[13px] font-medium font-['Roboto'] ${
                   darkMode
-                    ? "text-slate-300"
+                    ? "text-neutral-300"
                     : "text-[#3C4043]"
                 }`}
               >
@@ -289,7 +289,7 @@ function AnnouncementModal({
                 disabled={loadingCompetitions || submitting}
                 className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none border ${
                   darkMode
-                    ? "bg-slate-950 border-slate-700 text-white"
+                    ? "bg-neutral-950 border-neutral-700 text-white"
                     : "bg-white border-[#E0E0E0] text-[#1C1B1F]"
                 }`}
               >
@@ -324,7 +324,7 @@ function AnnouncementModal({
               <label
                 className={`text-[13px] font-medium font-['Roboto'] ${
                   darkMode
-                    ? "text-slate-300"
+                    ? "text-neutral-300"
                     : "text-[#3C4043]"
                 }`}
               >
@@ -342,7 +342,7 @@ function AnnouncementModal({
                 disabled={submitting}
                 className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none border ${
                   darkMode
-                    ? "bg-slate-950 border-slate-700 text-white"
+                    ? "bg-neutral-950 border-neutral-700 text-white"
                     : "bg-white border-[#E0E0E0] text-[#1C1B1F]"
                 }`}
               />
@@ -350,7 +350,7 @@ function AnnouncementModal({
               <span
                 className={`text-[11px] text-right font-['Roboto'] ${
                   darkMode
-                    ? "text-slate-500"
+                    ? "text-neutral-500"
                     : "text-[#9AA0A6]"
                 }`}
               >
@@ -362,7 +362,7 @@ function AnnouncementModal({
               <label
                 className={`text-[13px] font-medium font-['Roboto'] ${
                   darkMode
-                    ? "text-slate-300"
+                    ? "text-neutral-300"
                     : "text-[#3C4043]"
                 }`}
               >
@@ -379,7 +379,7 @@ function AnnouncementModal({
                 disabled={submitting}
                 className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none resize-none border ${
                   darkMode
-                    ? "bg-slate-950 border-slate-700 text-white"
+                    ? "bg-neutral-950 border-neutral-700 text-white"
                     : "bg-white border-[#E0E0E0] text-[#1C1B1F]"
                 }`}
               />
@@ -389,7 +389,7 @@ function AnnouncementModal({
           <div
             className={`flex justify-end gap-3 px-7 py-5 border-t ${
               darkMode
-                ? "border-slate-800"
+                ? "border-neutral-800"
                 : "border-[#F1F3F4]"
             }`}
           >
@@ -399,7 +399,7 @@ function AnnouncementModal({
               disabled={submitting}
               className={`px-5 py-2.5 rounded-[10px] text-[14px] font-semibold border font-['DM_Sans'] disabled:opacity-60 ${
                 darkMode
-                  ? "border-slate-700 text-slate-300 hover:bg-slate-800"
+                  ? "border-neutral-700 text-neutral-300 hover:bg-neutral-800"
                   : "border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]"
               }`}
             >
@@ -423,31 +423,31 @@ function AnnouncementModal({
 function ViewAllModal({ onClose, darkMode, submissions }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-10" style={{ backgroundColor: "rgba(28,27,31,0.45)", backdropFilter: "blur(3px)" }}>
-      <div className={`flex flex-col w-full max-w-4xl h-full max-h-[800px] rounded-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
-        <div className={`flex items-center justify-between px-7 py-5 border-b flex-shrink-0 ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+      <div className={`flex flex-col w-full max-w-4xl h-full max-h-[800px] rounded-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-neutral-900 border border-neutral-800' : 'bg-white'}`}>
+        <div className={`flex items-center justify-between px-7 py-5 border-b flex-shrink-0 ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
           <h2 className={`text-[18px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Full Submission Feed</h2>
-          <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-[#F1F3F4]'}`}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke={darkMode ? "#94A3B8" : "#5F6368"} strokeWidth="1.6" strokeLinecap="round" /></svg>
+          <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-neutral-800' : 'hover:bg-[#F1F3F4]'}`}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.6" strokeLinecap="round" /></svg>
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <div className={`grid px-6 py-3 border-b sticky top-0 z-10 ${darkMode ? 'bg-slate-950/90 border-slate-800' : 'bg-[#F8F9FA]/90 border-[#E0E0E0]'} backdrop-blur-md`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
+          <div className={`grid px-6 py-3 border-b sticky top-0 z-10 ${darkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-[#F8F9FA]/90 border-[#E0E0E0]'} backdrop-blur-md`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
             {["Time", "Team Name", "Problem", "Language", "Status"].map((h) => (
               <div key={h} className="text-[11px] font-bold uppercase tracking-wider text-[#9AA0A6] font-['Roboto']">{h}</div>
             ))}
           </div>
           {submissions.map((s, idx) => (
-            <div key={s.id || idx} className={`grid px-6 py-3.5 items-center border-b transition-colors ${darkMode ? 'border-slate-800/50 hover:bg-slate-800/50' : 'border-[#F8F9FA] hover:bg-[#FAFAFA]'}`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
-              <span className={`tabular-nums text-[13px] font-['JetBrains_Mono'] ${darkMode ? 'text-slate-300' : 'text-[#5F6368]'}`}>{s.time}</span>
+            <div key={s.id || idx} className={`grid px-6 py-3.5 items-center border-b transition-colors ${darkMode ? 'border-neutral-800/50 hover:bg-neutral-800/50' : 'border-[#F8F9FA] hover:bg-[#FAFAFA]'}`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
+              <span className={`tabular-nums text-[13px] font-['JetBrains_Mono'] ${darkMode ? 'text-neutral-300' : 'text-[#5F6368]'}`}>{s.time}</span>
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold font-['DM_Sans']" style={{ backgroundColor: s.avatar }}>{s.team.slice(0, 2).toUpperCase()}</div>
-                <span className={`text-[14px] font-medium font-['DM_Sans'] ${darkMode ? 'text-slate-200' : 'text-[#1C1B1F]'}`}>{s.team}</span>
+                <span className={`text-[14px] font-medium font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#1C1B1F]'}`}>{s.team}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`w-6 h-6 rounded-[6px] flex items-center justify-center text-[11px] font-bold font-['DM_Sans'] ${darkMode ? 'bg-blue-950 text-blue-400' : 'bg-[#E8F0FE] text-[#3A7CF5]'}`}>{s.problem}</span>
-                <span className={`text-[13px] truncate font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>{s.problemFull}</span>
+                <span className={`text-[13px] truncate font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>{s.problemFull}</span>
               </div>
-              <span className={`inline-block px-2.5 py-1 rounded-[6px] text-[12px] font-medium font-['JetBrains_Mono'] ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-[#F1F3F4] text-[#3C4043]'}`}>{s.lang}</span>
+              <span className={`inline-block px-2.5 py-1 rounded-[6px] text-[12px] font-medium font-['JetBrains_Mono'] ${darkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-[#F1F3F4] text-[#3C4043]'}`}>{s.lang}</span>
               <StatusBadge status={s.status} />
             </div>
           ))}
@@ -600,7 +600,7 @@ export default function AdminOverview() {
           <h1 className={`text-[26px] font-bold tracking-[-0.4px] font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
             Live Contest Dashboard
           </h1>
-          <p className={`text-[14px] mt-1 font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>
+          <p className={`text-[14px] mt-1 font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
             Monitor real-time contest activity and team submissions.
           </p>
         </div>
@@ -610,7 +610,7 @@ export default function AdminOverview() {
           <div className="relative">
             <button 
               onClick={() => setShowFilter(!showFilter)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors font-['DM_Sans'] ${darkMode ? 'border-slate-800 bg-slate-900 text-slate-200 hover:bg-slate-800' : 'border-[#E0E0E0] bg-white text-[#3C4043] hover:bg-[#F1F3F4]'}`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors font-['DM_Sans'] ${darkMode ? 'border-neutral-800 bg-neutral-900 text-neutral-200 hover:bg-neutral-800' : 'border-[#E0E0E0] bg-white text-[#3C4043] hover:bg-[#F1F3F4]'}`}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M2 4h10M4 7h6M6 10h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
@@ -621,8 +621,8 @@ export default function AdminOverview() {
               )}
             </button>
             {showFilter && (
-              <div className={`absolute top-11 right-0 w-48 rounded-[10px] shadow-lg border p-2 z-20 font-['Roboto'] text-[13px] ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-[#E0E0E0] text-[#3C4043]'}`}>
-                <label className="flex items-center gap-2 p-2 hover:bg-[#F1F3F4] dark:hover:bg-slate-800 rounded cursor-pointer">
+              <div className={`absolute top-11 right-0 w-48 rounded-[10px] shadow-lg border p-2 z-20 font-['Roboto'] text-[13px] ${darkMode ? 'bg-neutral-900 border-neutral-700 text-neutral-200' : 'bg-white border-[#E0E0E0] text-[#3C4043]'}`}>
+                <label className="flex items-center gap-2 p-2 hover:bg-[#F1F3F4] dark:hover:bg-neutral-800 rounded cursor-pointer">
                   <input 
                     type="checkbox" 
                     checked={isAllSubmissions}
@@ -631,7 +631,7 @@ export default function AdminOverview() {
                   /> 
                   All Submissions
                 </label>
-                <label className="flex items-center gap-2 p-2 hover:bg-[#F1F3F4] dark:hover:bg-slate-800 rounded cursor-pointer">
+                <label className="flex items-center gap-2 p-2 hover:bg-[#F1F3F4] dark:hover:bg-neutral-800 rounded cursor-pointer">
                   <input 
                     type="checkbox" 
                     checked={filterAcceptedOnly}
@@ -640,7 +640,7 @@ export default function AdminOverview() {
                   /> 
                   Accepted Only
                 </label>
-                <label className="flex items-center gap-2 p-2 hover:bg-[#F1F3F4] dark:hover:bg-slate-800 rounded cursor-pointer">
+                <label className="flex items-center gap-2 p-2 hover:bg-[#F1F3F4] dark:hover:bg-neutral-800 rounded cursor-pointer">
                   <input 
                     type="checkbox" 
                     checked={filterErrorsWarnings}
@@ -726,7 +726,7 @@ export default function AdminOverview() {
             ),
           },
         ].map(({ label, value, sub, accent, bg, change, changeUp, sparkPoints, icon }) => (
-          <div key={label} className={`rounded-[16px] p-6 flex flex-col gap-4 border shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E0E0E0]'}`}>
+          <div key={label} className={`rounded-[16px] p-6 flex flex-col gap-4 border shadow-sm ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
             <div className="flex items-start justify-between">
               <div className="w-11 h-11 rounded-[12px] flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>{icon}</div>
               <Sparkline color={accent} points={sparkPoints} />
@@ -753,8 +753,8 @@ export default function AdminOverview() {
       </div>
 
       {/* Live Submission Feed Table */}
-      <div className={`rounded-[16px] overflow-hidden flex flex-col border shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E0E0E0]'}`}>
-        <div className={`flex items-center justify-between px-6 py-4 border-b ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+      <div className={`rounded-[16px] overflow-hidden flex flex-col border shadow-sm ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
+        <div className={`flex items-center justify-between px-6 py-4 border-b ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
           <div className="flex items-center gap-3">
             <h2 className={`text-[16px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Live Submission Feed</h2>
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${darkMode ? 'bg-emerald-950/40' : 'bg-[#E8F5E9]'}`}>
@@ -776,7 +776,7 @@ export default function AdminOverview() {
         </div>
 
         {/* Table Header */}
-        <div className={`grid px-6 py-3 border-b ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
+        <div className={`grid px-6 py-3 border-b ${darkMode ? 'bg-neutral-950/50 border-neutral-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
           {["Time", "Team Name", "Problem", "Language", "Status"].map((h) => (
             <div key={h} className="text-[11px] font-bold uppercase tracking-wider text-[#9AA0A6] font-['Roboto']">{h}</div>
           ))}
@@ -785,21 +785,21 @@ export default function AdminOverview() {
         {/* Filtered Table Rows */}
         {filteredSubmissions.length > 0 ? (
            filteredSubmissions.slice(0, 7).map((s, idx) => (
-            <div key={s.id} className={`grid px-6 items-center py-3.5 transition-colors ${darkMode ? 'hover:bg-slate-800/50 border-slate-800/50' : 'hover:bg-[#FAFAFA] border-[#F8F9FA]'} ${idx < Math.min(filteredSubmissions.length, 7) - 1 ? 'border-b' : ''}`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
+            <div key={s.id} className={`grid px-6 items-center py-3.5 transition-colors ${darkMode ? 'hover:bg-neutral-800/50 border-neutral-800/50' : 'hover:bg-[#FAFAFA] border-[#F8F9FA]'} ${idx < Math.min(filteredSubmissions.length, 7) - 1 ? 'border-b' : ''}`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
               <div className="flex items-center gap-1.5">
                 {idx === 0 && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[#34A853]" />}
-                <span className={`tabular-nums text-[13px] font-['JetBrains_Mono'] ${darkMode ? 'text-slate-300' : 'text-[#5F6368]'}`}>{s.time}</span>
+                <span className={`tabular-nums text-[13px] font-['JetBrains_Mono'] ${darkMode ? 'text-neutral-300' : 'text-[#5F6368]'}`}>{s.time}</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 font-['DM_Sans']" style={{ backgroundColor: s.avatar }}>{s.team.slice(0, 2).toUpperCase()}</div>
-                <span className={`text-[14px] font-medium font-['DM_Sans'] ${darkMode ? 'text-slate-200' : 'text-[#1C1B1F]'}`}>{s.team}</span>
+                <span className={`text-[14px] font-medium font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#1C1B1F]'}`}>{s.team}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`w-6 h-6 rounded-[6px] flex items-center justify-center text-[11px] font-bold flex-shrink-0 font-['DM_Sans'] ${darkMode ? 'bg-blue-950 text-blue-400' : 'bg-[#E8F0FE] text-[#3A7CF5]'}`}>{s.problem}</span>
-                <span className={`text-[13px] truncate font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>{s.problemFull}</span>
+                <span className={`text-[13px] truncate font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>{s.problemFull}</span>
               </div>
               <div>
-                <span className={`inline-block px-2.5 py-1 rounded-[6px] text-[12px] font-medium font-['JetBrains_Mono'] ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-[#F1F3F4] text-[#3C4043]'}`}>{s.lang}</span>
+                <span className={`inline-block px-2.5 py-1 rounded-[6px] text-[12px] font-medium font-['JetBrains_Mono'] ${darkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-[#F1F3F4] text-[#3C4043]'}`}>{s.lang}</span>
               </div>
               <div><StatusBadge status={s.status} /></div>
             </div>
@@ -809,11 +809,11 @@ export default function AdminOverview() {
         )}
         
         {/* Card Footer */}
-        <div className={`flex items-center justify-between px-6 py-3 border-t ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`}>
+        <div className={`flex items-center justify-between px-6 py-3 border-t ${darkMode ? 'bg-neutral-950/50 border-neutral-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`}>
           <span className="text-[12px] text-[#9AA0A6] font-['Roboto']">Showing latest {Math.min(filteredSubmissions.length, 7)} of {filteredSubmissions.length} submissions</span>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#34A853] animate-live-pulse" />
-            <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>Auto-refreshing</span>
+            <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>Auto-refreshing</span>
           </div>
         </div>
       </div>

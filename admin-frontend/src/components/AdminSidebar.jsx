@@ -51,9 +51,9 @@ const NAV_ITEMS = [
 
 export default function AdminSidebar({ darkMode }) {
   return (
-    <aside className={`w-[20%] min-w-[240px] flex flex-col flex-shrink-0 h-full border-r transition-colors ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E0E0E0]'}`}>
+    <aside className={`w-[20%] min-w-[240px] flex flex-col flex-shrink-0 h-full border-r transition-colors ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
       {/* Sidebar header */}
-      <div className={`px-5 py-5 flex flex-col gap-1 flex-shrink-0 border-b ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+      <div className={`px-5 py-5 flex flex-col gap-1 flex-shrink-0 border-b ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
         <div className="flex items-center gap-3">
           
           <div className="w-9 h-9 flex-shrink-0">
@@ -81,7 +81,7 @@ export default function AdminSidebar({ darkMode }) {
           <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#34A853] animate-live-pulse" />
           <div className="flex flex-col">
             <span className={`text-[11px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-emerald-400' : 'text-[#2E7D32]'}`}>Contest Live</span>
-            <span className={`text-[10px] font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>GDG KAU × ICPC 2025</span>
+            <span className={`text-[10px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>GDG KAU × ICPC 2025</span>
           </div>
         </div>
       </div>
@@ -102,8 +102,8 @@ export default function AdminSidebar({ darkMode }) {
                     ? 'bg-blue-950/50 text-blue-400 font-semibold'
                     : 'bg-[#E8F0FE] text-[#3A7CF5] font-semibold'
                   : darkMode
-                    ? 'text-slate-400 hover:bg-slate-800'
-                    : 'text-[#5F6368] hover:bg-slate-100'
+                    ? 'text-neutral-400 hover:bg-neutral-800'
+                    : 'text-[#5F6368] hover:bg-neutral-100'
               }`
             }
           >
@@ -120,7 +120,7 @@ export default function AdminSidebar({ darkMode }) {
       </nav>
 
       {/* Sidebar footer */}
-      <div className={`px-5 py-4 flex-shrink-0 border-t ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+      <div className={`px-5 py-4 flex-shrink-0 border-t ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold bg-[#3A7CF5] font-['DM_Sans'] flex-shrink-0">
             AD

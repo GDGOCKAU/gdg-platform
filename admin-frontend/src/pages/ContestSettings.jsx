@@ -6,7 +6,7 @@ import { useOutletContext } from "react-router-dom";
 function FormField({ label, children, darkMode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className={`text-[13px] font-medium font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>
+      <label className={`text-[13px] font-medium font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>
         {label}
       </label>
       {children}
@@ -24,9 +24,9 @@ function Input({ placeholder, value, onChange, type = "text", darkMode }) {
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
       placeholder={placeholder}
-      className={`w-full px-4 py-2.5 text-[14px] rounded-[8px] outline-none transition-all duration-150 ${darkMode ? 'bg-slate-950 text-white placeholder-slate-600' : 'bg-white text-[#1C1B1F] placeholder-slate-400'}`}
+      className={`w-full px-4 py-2.5 text-[14px] rounded-[8px] outline-none transition-all duration-150 ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-white text-[#1C1B1F] placeholder-neutral-400'}`}
       style={{
-        border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`,
+        border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
         fontFamily: "'Roboto', sans-serif"
       }}
     />
@@ -42,16 +42,16 @@ function Select({ value, onChange, options, darkMode }) {
         onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`w-full appearance-none px-4 py-2.5 text-[14px] rounded-[8px] outline-none transition-all duration-150 cursor-pointer ${darkMode ? 'bg-slate-950 text-white' : 'bg-white text-[#1C1B1F]'}`}
+        className={`w-full appearance-none px-4 py-2.5 text-[14px] rounded-[8px] outline-none transition-all duration-150 cursor-pointer ${darkMode ? 'bg-neutral-950 text-white' : 'bg-white text-[#1C1B1F]'}`}
         style={{
-          border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`,
+          border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
           fontFamily: "'Roboto', sans-serif"
         }}
       >
         {options.map(o => <option key={o}>{o}</option>)}
       </select>
       <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path d="M3 5l4 4 4-4" stroke={darkMode ? "#94A3B8" : "#9AA0A6"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 5l4 4 4-4" stroke={darkMode ? "#A3A3A3" : "#9AA0A6"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
   );
@@ -75,7 +75,7 @@ function DetailPane({ contestName, onClose, darkMode }) {
 
   return (
     <div
-      className={`rounded-[16px] overflow-hidden ${darkMode ? 'bg-slate-900 border-slate-700 shadow-xl' : 'bg-white border-[#C5D9FB]'}`}
+      className={`rounded-[16px] overflow-hidden ${darkMode ? 'bg-neutral-900 border-neutral-700 shadow-xl' : 'bg-white border-[#C5D9FB]'}`}
       style={{
         borderWidth: "1px",
         borderStyle: "solid",
@@ -84,7 +84,7 @@ function DetailPane({ contestName, onClose, darkMode }) {
       }}
     >
       {/* Detail header */}
-      <div className={`flex items-center justify-between px-6 py-4 border-b ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-[#F8FBFF] border-[#F1F3F4]'}`}>
+      <div className={`flex items-center justify-between px-6 py-4 border-b ${darkMode ? 'bg-neutral-950/50 border-neutral-800' : 'bg-[#F8FBFF] border-[#F1F3F4]'}`}>
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center ${darkMode ? 'bg-blue-950/50' : 'bg-[#E8F0FE]'}`}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -93,21 +93,21 @@ function DetailPane({ contestName, onClose, darkMode }) {
           </div>
           <div>
             <div className={`text-[14px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>{contestName}</div>
-            <div className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#9AA0A6]'}`}>Archived · June 12, 2026 · 45 teams</div>
+            <div className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#9AA0A6]'}`}>Archived · June 12, 2026 · 45 teams</div>
           </div>
         </div>
         <button
           onClick={onClose}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-[#F1F3F4]'}`}
+          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-neutral-800' : 'hover:bg-[#F1F3F4]'}`}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 3l8 8M11 3l-8 8" stroke={darkMode ? "#94A3B8" : "#9AA0A6"} strokeWidth="1.6" strokeLinecap="round" />
+            <path d="M3 3l8 8M11 3l-8 8" stroke={darkMode ? "#A3A3A3" : "#9AA0A6"} strokeWidth="1.6" strokeLinecap="round" />
           </svg>
         </button>
       </div>
 
       {/* Tabs */}
-      <div className={`flex items-center gap-0 px-6 pt-0 border-b ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-[#F1F3F4] bg-white'}`}>
+      <div className={`flex items-center gap-0 px-6 pt-0 border-b ${darkMode ? 'border-neutral-800 bg-neutral-900' : 'border-[#F1F3F4] bg-white'}`}>
         {[
           { id: "leaderboard", label: "Final Leaderboard" },
           { id: "scores",      label: "Team Scores" },
@@ -117,7 +117,7 @@ function DetailPane({ contestName, onClose, darkMode }) {
             key={id}
             onClick={() => setTab(id)}
             className="px-5 py-3 text-[13px] font-semibold transition-all duration-150 relative font-['DM_Sans']"
-            style={{ color: tab === id ? "#3A7CF5" : (darkMode ? "#64748B" : "#9AA0A6") }}
+            style={{ color: tab === id ? "#3A7CF5" : (darkMode ? "#737373" : "#9AA0A6") }}
           >
             {label}
             {tab === id && (
@@ -128,7 +128,7 @@ function DetailPane({ contestName, onClose, darkMode }) {
       </div>
 
       {/* Tab content */}
-      <div className={`px-6 py-4 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+      <div className={`px-6 py-4 ${darkMode ? 'bg-neutral-900' : 'bg-white'}`}>
         {(tab === "leaderboard" || tab === "scores") && (() => {
           
           // Logic: If on leaderboard, show top 4. Otherwise show all.
@@ -138,11 +138,11 @@ function DetailPane({ contestName, onClose, darkMode }) {
             <div className="flex flex-col gap-0">
               {/* Mini table header */}
               <div
-                className={`grid px-4 py-2 border rounded-t-[8px] ${darkMode ? 'bg-slate-950 border-slate-800' : 'bg-[#F8F9FA] border-[#F1F3F4]'}`}
+                className={`grid px-4 py-2 border rounded-t-[8px] ${darkMode ? 'bg-neutral-950 border-neutral-800' : 'bg-[#F8F9FA] border-[#F1F3F4]'}`}
                 style={{ gridTemplateColumns: "40px 1fr 100px 140px 160px", gap: "12px" }}
               >
                 {["#", "Team Name", "Score", "Submissions", ""].map((h, i) => (
-                  <div key={i} className={`text-[11px] font-bold uppercase tracking-wider font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>{h}</div>
+                  <div key={i} className={`text-[11px] font-bold uppercase tracking-wider font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>{h}</div>
                 ))}
               </div>
               
@@ -151,11 +151,11 @@ function DetailPane({ contestName, onClose, darkMode }) {
                 {displayTeams.map((t, idx) => (
                   <div
                     key={t.name}
-                    className={`grid px-4 py-3 items-center transition-colors border-x ${darkMode ? 'hover:bg-slate-800/50 border-slate-800' : 'hover:bg-[#FAFBFF] border-[#F1F3F4]'}`}
+                    className={`grid px-4 py-3 items-center transition-colors border-x ${darkMode ? 'hover:bg-neutral-800/50 border-neutral-800' : 'hover:bg-[#FAFBFF] border-[#F1F3F4]'}`}
                     style={{
                       gridTemplateColumns: "40px 1fr 100px 140px 160px",
                       gap: "12px",
-                      borderBottom: `1px solid ${darkMode ? '#1E293B' : (idx < displayTeams.length - 1 ? '#F8F9FA' : '#F1F3F4')}`,
+                      borderBottom: `1px solid ${darkMode ? '#262626' : (idx < displayTeams.length - 1 ? '#F8F9FA' : '#F1F3F4')}`,
                       borderRadius: idx === displayTeams.length - 1 ? "0 0 8px 8px" : undefined
                     }}
                   >
@@ -164,10 +164,10 @@ function DetailPane({ contestName, onClose, darkMode }) {
                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold font-['DM_Sans']" style={{ backgroundColor: t.avatar }}>
                         {t.name.slice(0, 2).toUpperCase()}
                       </div>
-                      <span className={`text-[13px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-slate-200' : 'text-[#1C1B1F]'}`}>{t.name}</span>
+                      <span className={`text-[13px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#1C1B1F]'}`}>{t.name}</span>
                     </div>
                     <div className="text-[13px] font-bold text-[#3A7CF5] font-['DM_Sans']">{t.score} pts</div>
-                    <div className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>{t.submissions} submissions</div>
+                    <div className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>{t.submissions} submissions</div>
                     <div>
                       <button
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[12px] font-semibold transition-all border font-['DM_Sans'] ${darkMode ? 'border-blue-900 text-blue-400 hover:bg-blue-950' : 'border-[#C5D9FB] text-[#3A7CF5] hover:bg-[#E8F0FE]'}`}
@@ -188,12 +188,12 @@ function DetailPane({ contestName, onClose, darkMode }) {
 
         {tab === "codes" && (
           <div className="flex flex-col items-center justify-center py-8 gap-3">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${darkMode ? 'bg-slate-800' : 'bg-[#F1F3F4]'}`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${darkMode ? 'bg-neutral-800' : 'bg-[#F1F3F4]'}`}>
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <path d="M5 7L2 11L5 15M17 7L20 11L17 15M13 4L9 18" stroke={darkMode ? "#94A3B8" : "#9AA0A6"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5 7L2 11L5 15M17 7L20 11L17 15M13 4L9 18" stroke={darkMode ? "#A3A3A3" : "#9AA0A6"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <div className={`text-[13px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>Submission archives are bundled per-team</div>
+            <div className={`text-[13px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>Submission archives are bundled per-team</div>
             <button
               className="flex items-center gap-2 px-5 py-2.5 rounded-[8px] text-[13px] font-semibold text-white bg-[#3A7CF5] hover:bg-[#2563EB] transition-colors font-['DM_Sans'] shadow-[0_2px_6px_rgba(58,124,245,0.30)]"
             >
@@ -245,16 +245,16 @@ export default function ContestSettings() {
         <h1 className={`text-[26px] font-bold tracking-[-0.4px] font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
           Contest Configuration
         </h1>
-        <p className={`text-[14px] mt-1 font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>
+        <p className={`text-[14px] mt-1 font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
           Create the active contest or review historical data from past events.
         </p>
       </div>
 
       {/* ── 1. Create New Contest card ── */}
-      <div className={`rounded-[16px] overflow-hidden border shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E0E0E0]'}`}>
+      <div className={`rounded-[16px] overflow-hidden border shadow-sm ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
         
         {/* Card header */}
-        <div className={`flex items-start justify-between px-7 py-5 border-b ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+        <div className={`flex items-start justify-between px-7 py-5 border-b ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0 ${darkMode ? 'bg-blue-950/50' : 'bg-[#E8F0FE]'}`}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -264,7 +264,7 @@ export default function ContestSettings() {
             </div>
             <div>
               <div className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Initialize Active Contest</div>
-              <div className={`text-[12px] mt-0.5 font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#9AA0A6]'}`}>Configure and launch a new contest session</div>
+              <div className={`text-[12px] mt-0.5 font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#9AA0A6]'}`}>Configure and launch a new contest session</div>
             </div>
           </div>
 
@@ -311,16 +311,16 @@ export default function ContestSettings() {
               onChange={e => setDescription(e.target.value)}
               placeholder="Enter rules, guidelines, and context for the participants..."
               rows={4}
-              className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none resize-none transition-all duration-150 ${darkMode ? 'bg-slate-950 text-white placeholder-slate-600' : 'bg-white text-[#1C1B1F] placeholder-slate-400'}`}
-              style={{ border: `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`, fontFamily: "'Roboto', sans-serif", lineHeight: "1.7" }}
+              className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none resize-none transition-all duration-150 ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-white text-[#1C1B1F] placeholder-neutral-400'}`}
+              style={{ border: `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`, fontFamily: "'Roboto', sans-serif", lineHeight: "1.7" }}
               onFocus={e => (e.currentTarget.style.border = "2px solid #3A7CF5")}
-              onBlur={e  => (e.currentTarget.style.border = `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`)}
+              onBlur={e  => (e.currentTarget.style.border = `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`)}
             />
           </FormField>
         </div>
 
         {/* Card footer */}
-        <div className={`flex items-center justify-between px-7 py-4 border-t ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-[#FAFAFA] border-[#F1F3F4]'}`}>
+        <div className={`flex items-center justify-between px-7 py-4 border-t ${darkMode ? 'bg-neutral-950/50 border-neutral-800' : 'bg-[#FAFAFA] border-[#F1F3F4]'}`}>
           <div className="flex items-center gap-2 h-6">
             {launched && (
               <div className="flex items-center gap-1.5 text-[13px] text-[#34A853] font-['Roboto']">
@@ -346,29 +346,29 @@ export default function ContestSettings() {
       </div>
 
       {/* ── 2. Archive card ── */}
-      <div className={`rounded-[16px] overflow-hidden border shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E0E0E0]'}`}>
+      <div className={`rounded-[16px] overflow-hidden border shadow-sm ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
 
         {/* Card header */}
-        <div className={`flex items-center justify-between px-7 py-4 border-b ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+        <div className={`flex items-center justify-between px-7 py-4 border-b ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center ${darkMode ? 'bg-slate-800' : 'bg-[#F1F3F4]'}`}>
+            <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center ${darkMode ? 'bg-neutral-800' : 'bg-[#F1F3F4]'}`}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="1" y="4" width="14" height="10" rx="2" stroke={darkMode ? "#94A3B8" : "#5F6368"} strokeWidth="1.4" />
-                <path d="M4 4V3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1" stroke={darkMode ? "#94A3B8" : "#5F6368"} strokeWidth="1.4" />
-                <path d="M5 8h6M5 11h4" stroke={darkMode ? "#94A3B8" : "#5F6368"} strokeWidth="1.3" strokeLinecap="round" />
+                <rect x="1" y="4" width="14" height="10" rx="2" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" />
+                <path d="M4 4V3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" />
+                <path d="M5 8h6M5 11h4" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.3" strokeLinecap="round" />
               </svg>
             </div>
             <div>
               <div className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Past Contests Archive</div>
-              <div className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#9AA0A6]'}`}>{ARCHIVE_ROWS.length} archived contests</div>
+              <div className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#9AA0A6]'}`}>{ARCHIVE_ROWS.length} archived contests</div>
             </div>
           </div>
 
           {/* Search */}
           <div className="relative">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <circle cx="6.5" cy="6.5" r="5" stroke={archiveSearchFocus ? "#3A7CF5" : (darkMode ? "#64748B" : "#9AA0A6")} strokeWidth="1.5" />
-              <path d="M10.5 10.5L14 14" stroke={archiveSearchFocus ? "#3A7CF5" : (darkMode ? "#64748B" : "#9AA0A6")} strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="6.5" cy="6.5" r="5" stroke={archiveSearchFocus ? "#3A7CF5" : (darkMode ? "#737373" : "#9AA0A6")} strokeWidth="1.5" />
+              <path d="M10.5 10.5L14 14" stroke={archiveSearchFocus ? "#3A7CF5" : (darkMode ? "#737373" : "#9AA0A6")} strokeWidth="1.5" strokeLinecap="round" />
             </svg>
             <input
               type="text" value={archiveSearch}
@@ -376,14 +376,14 @@ export default function ContestSettings() {
               onFocus={() => setArchiveSearchFocus(true)}
               onBlur={() => setArchiveSearchFocus(false)}
               placeholder="Search archives..."
-              className={`pl-9 pr-4 py-2 text-[13px] rounded-[8px] outline-none transition-all font-['Roboto'] w-[210px] ${darkMode ? 'bg-slate-950 text-white placeholder-slate-500' : 'bg-[#F8F9FA] text-[#1C1B1F] placeholder-slate-400'}`}
-              style={{ border: archiveSearchFocus ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}` }}
+              className={`pl-9 pr-4 py-2 text-[13px] rounded-[8px] outline-none transition-all font-['Roboto'] w-[210px] ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-500' : 'bg-[#F8F9FA] text-[#1C1B1F] placeholder-neutral-400'}`}
+              style={{ border: archiveSearchFocus ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}` }}
             />
           </div>
         </div>
 
         {/* Table headers */}
-        <div className={`grid px-7 py-3 border-b ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`} style={{ gridTemplateColumns: "1fr 140px 120px 1fr 130px", gap: "16px" }}>
+        <div className={`grid px-7 py-3 border-b ${darkMode ? 'bg-neutral-950/50 border-neutral-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`} style={{ gridTemplateColumns: "1fr 140px 120px 1fr 130px", gap: "16px" }}>
           {["Contest Name", "Date Hosted", "Total Teams", "Winner", "Actions"].map((h) => (
             <div key={h} className="text-[11px] font-bold uppercase tracking-wider text-[#9AA0A6] font-['Roboto']">{h}</div>
           ))}
@@ -393,34 +393,34 @@ export default function ContestSettings() {
         {filteredArchive.map((row, idx) => (
           <div key={row.id}>
             <div
-              className={`grid px-7 items-center transition-colors cursor-pointer ${darkMode ? 'hover:bg-slate-800/50 border-slate-800' : 'hover:bg-[#FAFBFF] border-[#F1F3F4]'}`}
+              className={`grid px-7 items-center transition-colors cursor-pointer ${darkMode ? 'hover:bg-neutral-800/50 border-neutral-800' : 'hover:bg-[#FAFBFF] border-[#F1F3F4]'}`}
               style={{ gridTemplateColumns: "1fr 140px 120px 1fr 130px", gap: "16px", paddingTop: "18px", paddingBottom: "18px", borderBottomWidth: "1px" }}
               onClick={() => setExpandedRow(expandedRow === row.id ? null : row.id)}
             >
               {/* Contest name */}
               <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 ${darkMode ? 'bg-slate-800' : 'bg-[#F1F3F4]'}`}>
+                <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 ${darkMode ? 'bg-neutral-800' : 'bg-[#F1F3F4]'}`}>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <path d="M7 1L8.5 5H13L9.5 7.5L11 12L7 9.5L3 12L4.5 7.5L1 5H5.5L7 1Z" fill="#FBBC04" />
                   </svg>
                 </div>
                 <div>
-                  <div className={`text-[14px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-slate-200' : 'text-[#1C1B1F]'}`}>{row.name}</div>
-                  <div className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>Archived</div>
+                  <div className={`text-[14px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#1C1B1F]'}`}>{row.name}</div>
+                  <div className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Archived</div>
                 </div>
               </div>
 
               {/* Date */}
-              <div className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>{row.date}</div>
+              <div className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>{row.date}</div>
 
               {/* Teams */}
               <div className="flex items-center gap-1.5">
                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                  <circle cx="5.5" cy="4" r="2.5" stroke={darkMode ? "#64748B" : "#9AA0A6"} strokeWidth="1.3" />
-                  <circle cx="9.5" cy="5" r="2" stroke={darkMode ? "#64748B" : "#9AA0A6"} strokeWidth="1.2" />
-                  <path d="M1 12c0-2 2-3.5 4.5-3.5S10 10 10 12" stroke={darkMode ? "#64748B" : "#9AA0A6"} strokeWidth="1.3" strokeLinecap="round" />
+                  <circle cx="5.5" cy="4" r="2.5" stroke={darkMode ? "#737373" : "#9AA0A6"} strokeWidth="1.3" />
+                  <circle cx="9.5" cy="5" r="2" stroke={darkMode ? "#737373" : "#9AA0A6"} strokeWidth="1.2" />
+                  <path d="M1 12c0-2 2-3.5 4.5-3.5S10 10 10 12" stroke={darkMode ? "#737373" : "#9AA0A6"} strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
-                <span className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>{row.teams} teams</span>
+                <span className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>{row.teams} teams</span>
               </div>
 
               {/* Winner */}
@@ -429,8 +429,8 @@ export default function ContestSettings() {
                   {row.winner.slice(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <span className={`text-[13px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-slate-200' : 'text-[#1C1B1F]'}`}>{row.winner}</span>
-                  <span className={`text-[12px] ml-2 font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>({row.winnerPts} pts)</span>
+                  <span className={`text-[13px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#1C1B1F]'}`}>{row.winner}</span>
+                  <span className={`text-[12px] ml-2 font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>({row.winnerPts} pts)</span>
                 </div>
               </div>
 
@@ -447,7 +447,7 @@ export default function ContestSettings() {
 
             {/* Expanded detail pane */}
             {expandedRow === row.id && (
-              <div className={`px-7 pb-5 border-b ${darkMode ? 'bg-slate-950/30 border-slate-800' : 'bg-[#F8FBFF] border-[#E0E0E0]'}`}>
+              <div className={`px-7 pb-5 border-b ${darkMode ? 'bg-neutral-950/30 border-neutral-800' : 'bg-[#F8FBFF] border-[#E0E0E0]'}`}>
                 <div className="pt-4">
                   <DetailPane
                     contestName={row.name}
@@ -462,16 +462,16 @@ export default function ContestSettings() {
 
         {filteredArchive.length === 0 && (
           <div className="flex flex-col items-center justify-center py-14 gap-2">
-            <span className={`text-[14px] font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>No contests match "{archiveSearch}"</span>
+            <span className={`text-[14px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>No contests match "{archiveSearch}"</span>
           </div>
         )}
 
         {/* Card footer */}
-        <div className={`flex items-center justify-between px-7 py-3 border-t ${darkMode ? 'bg-slate-950/50 border-slate-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`}>
-          <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>
+        <div className={`flex items-center justify-between px-7 py-3 border-t ${darkMode ? 'bg-neutral-950/50 border-neutral-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`}>
+          <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
             {ARCHIVE_ROWS.length} archived contests total
           </span>
-          <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>
+          <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
             Click any row to expand contest details
           </span>
         </div>

@@ -242,7 +242,7 @@ export default function AdminHeader({
     <header
       className={`flex-shrink-0 flex items-center justify-end px-8 h-[64px] border-b transition-colors z-30 ${
         darkMode
-          ? "bg-slate-900 border-slate-800"
+          ? "bg-neutral-900 border-neutral-800"
           : "bg-white border-[#E0E0E0]"
       }`}
     >
@@ -252,19 +252,19 @@ export default function AdminHeader({
           <div
             className={`flex items-center gap-2.5 px-4 py-2 rounded-[10px] border ${
               darkMode
-                ? "bg-slate-800/60 border-slate-700"
+                ? "bg-neutral-800/60 border-neutral-700"
                 : "bg-[#F1F3F4] border-[#E0E0E0]"
             }`}
           >
             <span
               className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                darkMode ? "bg-slate-500" : "bg-[#9AA0A6]"
+                darkMode ? "bg-neutral-500" : "bg-[#9AA0A6]"
               }`}
             />
 
             <span
               className={`text-[12px] font-semibold font-['DM_Sans'] ${
-                darkMode ? "text-slate-400" : "text-[#5F6368]"
+                darkMode ? "text-neutral-400" : "text-[#5F6368]"
               }`}
             >
               No active competition
@@ -323,7 +323,7 @@ export default function AdminHeader({
         <div
           className={`w-px h-5 ${
             darkMode
-              ? "bg-slate-800"
+              ? "bg-neutral-800"
               : "bg-[#E0E0E0]"
           }`}
         />
@@ -338,7 +338,7 @@ export default function AdminHeader({
             }}
             className={`relative w-8 h-8 rounded-[8px] flex items-center justify-center border transition-colors ${
               darkMode
-                ? "border-slate-800 hover:bg-slate-800"
+                ? "border-neutral-800 hover:bg-neutral-800"
                 : "border-[#E0E0E0] hover:bg-[#F1F3F4]"
             }`}
           >
@@ -351,7 +351,7 @@ export default function AdminHeader({
               <path
                 d="M8 2a4 4 0 0 0-4 4v3l-1.5 2h11L12 9V6a4 4 0 0 0-4-4Z"
                 stroke={
-                  darkMode ? "#94A3B8" : "#5F6368"
+                  darkMode ? "#A3A3A3" : "#5F6368"
                 }
                 strokeWidth="1.4"
                 strokeLinejoin="round"
@@ -360,7 +360,7 @@ export default function AdminHeader({
               <path
                 d="M6.5 13a1.5 1.5 0 0 0 3 0"
                 stroke={
-                  darkMode ? "#94A3B8" : "#5F6368"
+                  darkMode ? "#A3A3A3" : "#5F6368"
                 }
                 strokeWidth="1.4"
               />
@@ -375,14 +375,14 @@ export default function AdminHeader({
             <div
               className={`absolute top-10 right-0 w-[320px] rounded-[16px] shadow-lg border overflow-hidden flex flex-col font-['Roboto'] ${
                 darkMode
-                  ? "bg-slate-900 border-slate-700"
+                  ? "bg-neutral-900 border-neutral-700"
                   : "bg-white border-[#E0E0E0]"
               }`}
             >
               <div
                 className={`px-4 py-3 border-b font-bold text-[14px] ${
                   darkMode
-                    ? "border-slate-800 text-white"
+                    ? "border-neutral-800 text-white"
                     : "border-[#F1F3F4] text-[#1C1B1F]"
                 }`}
               >
@@ -393,7 +393,7 @@ export default function AdminHeader({
                 <div
                   className={`px-4 py-3 border-b text-[13px] ${
                     darkMode
-                      ? "border-slate-800 hover:bg-slate-800"
+                      ? "border-neutral-800 hover:bg-neutral-800"
                       : "border-[#F1F3F4] hover:bg-[#F8F9FA]"
                   }`}
                 >
@@ -410,7 +410,7 @@ export default function AdminHeader({
                   <p
                     className={`mt-0.5 ${
                       darkMode
-                        ? "text-slate-300"
+                        ? "text-neutral-300"
                         : "text-[#5F6368]"
                     }`}
                   >
@@ -422,7 +422,7 @@ export default function AdminHeader({
                 <div
                   className={`px-4 py-3 border-b text-[13px] ${
                     darkMode
-                      ? "border-slate-800 hover:bg-slate-800"
+                      ? "border-neutral-800 hover:bg-neutral-800"
                       : "border-[#F1F3F4] hover:bg-[#F8F9FA]"
                   }`}
                 >
@@ -439,7 +439,7 @@ export default function AdminHeader({
                   <p
                     className={`mt-0.5 ${
                       darkMode
-                        ? "text-slate-300"
+                        ? "text-neutral-300"
                         : "text-[#5F6368]"
                     }`}
                   >
@@ -451,7 +451,7 @@ export default function AdminHeader({
                 <div
                   className={`px-4 py-3 text-[13px] ${
                     darkMode
-                      ? "hover:bg-slate-800"
+                      ? "hover:bg-neutral-800"
                       : "hover:bg-[#F8F9FA]"
                   }`}
                 >
@@ -468,7 +468,7 @@ export default function AdminHeader({
                   <p
                     className={`mt-0.5 ${
                       darkMode
-                        ? "text-slate-300"
+                        ? "text-neutral-300"
                         : "text-[#5F6368]"
                     }`}
                   >
@@ -492,7 +492,7 @@ export default function AdminHeader({
           aria-label="Toggle theme"
           className={`w-8 h-8 rounded-[8px] flex items-center justify-center border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
             darkMode
-              ? "border-slate-800 hover:bg-slate-800"
+              ? "border-neutral-800 hover:bg-neutral-800"
               : "border-[#E0E0E0] hover:bg-[#F1F3F4]"
           }`}
         >
@@ -507,13 +507,13 @@ export default function AdminHeader({
                 cx="8"
                 cy="8"
                 r="3.5"
-                stroke="#94A3B8"
+                stroke="#A3A3A3"
                 strokeWidth="1.4"
               />
 
               <path
                 d="M8 1V2.5M8 13.5V15M1 8H2.5M13.5 8H15M3.05 3.05L4.11 4.11M11.89 11.89L12.95 12.95M3.05 12.95L4.11 11.89M11.89 4.11L12.95 3.05"
-                stroke="#94A3B8"
+                stroke="#A3A3A3"
                 strokeWidth="1.4"
                 strokeLinecap="round"
               />
@@ -571,7 +571,7 @@ export default function AdminHeader({
             <div
               className={`absolute top-12 right-0 w-[180px] rounded-[12px] shadow-lg border flex flex-col font-['DM_Sans'] overflow-hidden ${
                 darkMode
-                  ? "bg-slate-900 border-slate-700"
+                  ? "bg-neutral-900 border-neutral-700"
                   : "bg-white border-[#E0E0E0]"
               }`}
             >

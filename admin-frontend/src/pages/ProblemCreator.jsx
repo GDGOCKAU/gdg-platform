@@ -5,7 +5,7 @@ import { useOutletContext } from "react-router-dom";
 
 function FieldLabel({ children, required, darkMode }) {
   return (
-    <label className={`text-[13px] font-medium flex items-center gap-1 font-['Roboto'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>
+    <label className={`text-[13px] font-medium flex items-center gap-1 font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>
       {children}
       {required && <span style={{ color: "#EA4335" }}>*</span>}
     </label>
@@ -22,9 +22,9 @@ function TextInput({ placeholder, value, onChange, monospace, darkMode }) {
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
       placeholder={placeholder}
-      className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none transition-all duration-150 ${darkMode ? 'bg-slate-950 text-white placeholder-slate-600' : 'bg-white text-[#1C1B1F] placeholder-slate-400'}`}
+      className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none transition-all duration-150 ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-white text-[#1C1B1F] placeholder-neutral-400'}`}
       style={{
-        border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`,
+        border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
         fontFamily: monospace ? "'JetBrains Mono', monospace" : "'Roboto', sans-serif",
       }}
     />
@@ -40,16 +40,16 @@ function SelectInput({ value, onChange, options, darkMode }) {
         onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        className={`w-full appearance-none px-4 py-3 text-[14px] rounded-[8px] outline-none transition-all duration-150 cursor-pointer ${darkMode ? 'bg-slate-950 text-white' : 'bg-white text-[#1C1B1F]'}`}
+        className={`w-full appearance-none px-4 py-3 text-[14px] rounded-[8px] outline-none transition-all duration-150 cursor-pointer ${darkMode ? 'bg-neutral-950 text-white' : 'bg-white text-[#1C1B1F]'}`}
         style={{ 
-          border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`, 
+          border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`, 
           fontFamily: "'Roboto', sans-serif" 
         }}
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path d="M3 5l4 4 4-4" stroke={darkMode ? "#94A3B8" : "#9AA0A6"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 5l4 4 4-4" stroke={darkMode ? "#A3A3A3" : "#9AA0A6"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
   );
@@ -65,9 +65,9 @@ function TextAreaInput({ placeholder, value, onChange, rows = 5, monospace, dark
       onBlur={() => setFocused(false)}
       placeholder={placeholder}
       rows={rows}
-      className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none transition-all duration-150 resize-none ${darkMode ? 'bg-slate-950 text-white placeholder-slate-600' : 'bg-white text-[#1C1B1F] placeholder-slate-400'}`}
+      className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none transition-all duration-150 resize-none ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-white text-[#1C1B1F] placeholder-neutral-400'}`}
       style={{
-        border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`,
+        border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
         fontFamily: monospace ? "'JetBrains Mono', monospace" : "'Roboto', sans-serif",
         lineHeight: "1.7",
       }}
@@ -78,7 +78,7 @@ function TextAreaInput({ placeholder, value, onChange, rows = 5, monospace, dark
 // Rich text toolbar 
 
 function RichToolbar({ darkMode }) {
-  const iconColor = darkMode ? "#94A3B8" : "#5F6368";
+  const iconColor = darkMode ? "#A3A3A3" : "#5F6368";
   const tools = [
     { title: "Bold", icon: <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 7h4a2 2 0 0 0 0-4H4v4zm0 0h4.5a2.5 2.5 0 0 1 0 5H4V7z" stroke={iconColor} strokeWidth="1.4" strokeLinejoin="round" /></svg> },
     { title: "Italic", icon: <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2H6M8 12H5M7.5 2l-3 10" stroke={iconColor} strokeWidth="1.4" strokeLinecap="round" /></svg> },
@@ -88,23 +88,23 @@ function RichToolbar({ darkMode }) {
   ];
   
   return (
-    <div className={`flex items-center gap-0.5 px-2 py-1.5 flex-wrap border-b ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-[#E0E0E0] bg-[#F8F9FA]'} rounded-t-[8px]`}>
+    <div className={`flex items-center gap-0.5 px-2 py-1.5 flex-wrap border-b ${darkMode ? 'border-neutral-800 bg-neutral-900' : 'border-[#E0E0E0] bg-[#F8F9FA]'} rounded-t-[8px]`}>
       {tools.map(({ title, icon }) => (
         <button key={title} title={title}
-          className={`w-7 h-7 flex items-center justify-center rounded-[5px] transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-[#E8F0FE]'}`}
+          className={`w-7 h-7 flex items-center justify-center rounded-[5px] transition-colors ${darkMode ? 'hover:bg-neutral-800' : 'hover:bg-[#E8F0FE]'}`}
         >
           {icon}
         </button>
       ))}
-      <div className={`w-px h-5 mx-1 ${darkMode ? 'bg-slate-800' : 'bg-[#E0E0E0]'}`} />
+      <div className={`w-px h-5 mx-1 ${darkMode ? 'bg-neutral-800' : 'bg-[#E0E0E0]'}`} />
       {["H1", "H2"].map(h => (
         <button key={h}
-          className={`px-2 h-7 flex items-center justify-center rounded-[5px] transition-colors text-[11px] font-bold font-['DM_Sans'] ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-[#5F6368] hover:bg-[#E8F0FE]'}`}
+          className={`px-2 h-7 flex items-center justify-center rounded-[5px] transition-colors text-[11px] font-bold font-['DM_Sans'] ${darkMode ? 'text-neutral-400 hover:bg-neutral-800' : 'text-[#5F6368] hover:bg-[#E8F0FE]'}`}
         >
           {h}
         </button>
       ))}
-      <div className={`ml-auto text-[11px] font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>Markdown supported</div>
+      <div className={`ml-auto text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Markdown supported</div>
     </div>
   );
 }
@@ -139,21 +139,21 @@ function FileUploadZone({ darkMode }) {
         onDrop={handleDrop}
         className="flex flex-col items-center justify-center gap-3 rounded-[12px] py-8 px-6 transition-all duration-150 cursor-pointer"
         style={{
-          border: `2px dashed ${drag ? "#3A7CF5" : (darkMode ? "#334155" : "#C4C7CC")}`,
-          backgroundColor: drag ? (darkMode ? "rgba(58,124,245,0.1)" : "#E8F0FE") : (darkMode ? "#0F172A" : "#FAFAFA"),
+          border: `2px dashed ${drag ? "#3A7CF5" : (darkMode ? "#404040" : "#C4C7CC")}`,
+          backgroundColor: drag ? (darkMode ? "rgba(58,124,245,0.1)" : "#E8F0FE") : (darkMode ? "#171717" : "#FAFAFA"),
         }}
       >
-        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: drag ? (darkMode ? "rgba(58,124,245,0.2)" : "#D2E3FC") : (darkMode ? "#1E293B" : "#F1F3F4") }}>
+        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: drag ? (darkMode ? "rgba(58,124,245,0.2)" : "#D2E3FC") : (darkMode ? "#262626" : "#F1F3F4") }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke={drag ? "#3A7CF5" : (darkMode ? "#94A3B8" : "#9AA0A6")} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M8 20H6a4 4 0 0 1 0-8h.5A5.5 5.5 0 0 1 17.5 12H18a3 3 0 0 1 0 6h-2" stroke={drag ? "#3A7CF5" : (darkMode ? "#94A3B8" : "#9AA0A6")} strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke={drag ? "#3A7CF5" : (darkMode ? "#A3A3A3" : "#9AA0A6")} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M8 20H6a4 4 0 0 1 0-8h.5A5.5 5.5 0 0 1 17.5 12H18a3 3 0 0 1 0 6h-2" stroke={drag ? "#3A7CF5" : (darkMode ? "#A3A3A3" : "#9AA0A6")} strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </div>
         <div className="text-center">
-          <div className="text-[14px] font-semibold font-['DM_Sans']" style={{ color: drag ? "#3A7CF5" : (darkMode ? "#CBD5E1" : "#3C4043") }}>
+          <div className="text-[14px] font-semibold font-['DM_Sans']" style={{ color: drag ? "#3A7CF5" : (darkMode ? "#D4D4D4" : "#3C4043") }}>
             {drag ? "Drop files here" : "Drag & drop test case files"}
           </div>
-          <div className={`text-[12px] mt-0.5 font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>
+          <div className={`text-[12px] mt-0.5 font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
             .zip or .txt · <span className="underline" style={{ color: "#3A7CF5" }}>Browse files</span>
           </div>
         </div>
@@ -171,14 +171,14 @@ function FileUploadZone({ darkMode }) {
               <span className={`text-[12px] flex-1 truncate font-['JetBrains_Mono'] ${darkMode ? 'text-emerald-400' : 'text-[#2E7D32]'}`}>{f}</span>
               <button onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="hover:opacity-70 transition-opacity">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M3 3l6 6M9 3l-6 6" stroke={darkMode ? "#94A3B8" : "#5F6368"} strokeWidth="1.4" strokeLinecap="round" />
+                  <path d="M3 3l6 6M9 3l-6 6" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
           ))}
         </div>
       )}
-      <p className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>
+      <p className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
         Include inputs and expected outputs for hidden grading. Files are validated against Judge0.
       </p>
     </div>
@@ -196,9 +196,9 @@ function ProblemLetterPicker({ value, onChange, darkMode }) {
           onClick={() => onChange(l)}
           className={`w-9 h-9 rounded-[8px] flex items-center justify-center text-[14px] font-bold transition-all duration-150 font-['DM_Sans']`}
           style={{
-            border: value === l ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`,
+            border: value === l ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
             backgroundColor: value === l ? (darkMode ? "rgba(58,124,245,0.15)" : "#E8F0FE") : "transparent",
-            color: value === l ? "#3A7CF5" : (darkMode ? "#94A3B8" : "#5F6368"),
+            color: value === l ? "#3A7CF5" : (darkMode ? "#A3A3A3" : "#5F6368"),
           }}
         >
           {l}
@@ -216,23 +216,23 @@ function TestCaseBlock({ tc, index, onChange, onRemove, darkMode }) {
 
   return (
     <div
-      className={`flex flex-col rounded-[8px] overflow-hidden transition-all duration-150 ${darkMode ? 'border border-slate-700' : 'border border-[#E0E0E0]'}`}
+      className={`flex flex-col rounded-[8px] overflow-hidden transition-all duration-150 ${darkMode ? 'border border-neutral-700' : 'border border-[#E0E0E0]'}`}
       style={{
-        borderColor: tc.visible ? "#3A7CF5" : (darkMode ? "#334155" : "#E0E0E0"),
-        backgroundColor: tc.visible ? (darkMode ? "rgba(58,124,245,0.05)" : "#FAFCFF") : (darkMode ? "#0F172A" : "#FAFAFA"),
+        borderColor: tc.visible ? "#3A7CF5" : (darkMode ? "#404040" : "#E0E0E0"),
+        backgroundColor: tc.visible ? (darkMode ? "rgba(58,124,245,0.05)" : "#FAFCFF") : (darkMode ? "#171717" : "#FAFAFA"),
       }}
     >
       {/* Block header */}
       <div
         className="flex items-center justify-between px-4 py-3 border-b"
         style={{
-          borderColor: tc.visible ? (darkMode ? "rgba(58,124,245,0.2)" : "#DCE9FD") : (darkMode ? "#1E293B" : "#F1F3F4"),
-          backgroundColor: tc.visible ? (darkMode ? "rgba(58,124,245,0.1)" : "#F0F6FF") : (darkMode ? "#1E293B" : "#F8F9FA"),
+          borderColor: tc.visible ? (darkMode ? "rgba(58,124,245,0.2)" : "#DCE9FD") : (darkMode ? "#262626" : "#F1F3F4"),
+          backgroundColor: tc.visible ? (darkMode ? "rgba(58,124,245,0.1)" : "#F0F6FF") : (darkMode ? "#262626" : "#F8F9FA"),
         }}
       >
         <div className="flex items-center gap-3">
           {/* Index label */}
-          <span className={`text-[12px] font-bold font-['DM_Sans'] ${darkMode ? 'text-slate-300' : 'text-[#5F6368]'}`}>
+          <span className={`text-[12px] font-bold font-['DM_Sans'] ${darkMode ? 'text-neutral-300' : 'text-[#5F6368]'}`}>
             Test Case #{index + 1}
           </span>
 
@@ -242,8 +242,8 @@ function TestCaseBlock({ tc, index, onChange, onRemove, darkMode }) {
               onClick={() => onChange(tc.id, { visible: !tc.visible })}
               className="w-4 h-4 rounded-[4px] flex items-center justify-center transition-all duration-150 flex-shrink-0"
               style={{
-                backgroundColor: tc.visible ? "#3A7CF5" : (darkMode ? "#0F172A" : "white"),
-                border: tc.visible ? "2px solid #3A7CF5" : `2px solid ${darkMode ? "#64748B" : "#C4C7CC"}`,
+                backgroundColor: tc.visible ? "#3A7CF5" : (darkMode ? "#171717" : "white"),
+                border: tc.visible ? "2px solid #3A7CF5" : `2px solid ${darkMode ? "#737373" : "#C4C7CC"}`,
               }}
             >
               {tc.visible && (
@@ -252,14 +252,14 @@ function TestCaseBlock({ tc, index, onChange, onRemove, darkMode }) {
                 </svg>
               )}
             </div>
-            <span className={`text-[12px] font-medium font-['Roboto']`} style={{ color: tc.visible ? "#3A7CF5" : (darkMode ? "#94A3B8" : "#9AA0A6") }}>
+            <span className={`text-[12px] font-medium font-['Roboto']`} style={{ color: tc.visible ? "#3A7CF5" : (darkMode ? "#A3A3A3" : "#9AA0A6") }}>
               Visible to Contestants
             </span>
           </label>
 
           {/* Hidden label */}
           {!tc.visible && (
-            <span className={`text-[11px] px-2 py-0.5 rounded-full font-['Roboto'] ${darkMode ? 'bg-slate-800 text-slate-400' : 'bg-[#F1F3F4] text-[#9AA0A6]'}`}>
+            <span className={`text-[11px] px-2 py-0.5 rounded-full font-['Roboto'] ${darkMode ? 'bg-neutral-800 text-neutral-400' : 'bg-[#F1F3F4] text-[#9AA0A6]'}`}>
               (Hidden Test Case)
             </span>
           )}
@@ -268,7 +268,7 @@ function TestCaseBlock({ tc, index, onChange, onRemove, darkMode }) {
         {/* Remove button */}
         <button
           onClick={() => onRemove(tc.id)}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-all font-['DM_Sans'] border ${darkMode ? 'border-slate-700 text-slate-400 hover:bg-red-950/40 hover:text-red-400 hover:border-red-900/50' : 'border-[#F1F3F4] text-[#9AA0A6] hover:bg-[#FFEBEE] hover:text-[#B71C1C]'}`}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-all font-['DM_Sans'] border ${darkMode ? 'border-neutral-700 text-neutral-400 hover:bg-red-950/40 hover:text-red-400 hover:border-red-900/50' : 'border-[#F1F3F4] text-[#9AA0A6] hover:bg-[#FFEBEE] hover:text-[#B71C1C]'}`}
         >
           <svg width="12" height="12" viewBox="0 0 13 13" fill="none">
             <path d="M2 3.5h9M4.5 3.5V2.5h4v1M5 5v4.5M8 5v4.5M3 3.5l.6 7h5.8l.6-7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -279,8 +279,8 @@ function TestCaseBlock({ tc, index, onChange, onRemove, darkMode }) {
 
       {/* Block body — side-by-side textareas */}
       <div className="grid grid-cols-2 gap-0">
-        <div className={`flex flex-col gap-1.5 p-3 border-r ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
-          <div className={`text-[11px] font-bold uppercase tracking-wider font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>
+        <div className={`flex flex-col gap-1.5 p-3 border-r ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
+          <div className={`text-[11px] font-bold uppercase tracking-wider font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
             Sample Input
           </div>
           <textarea
@@ -289,16 +289,16 @@ function TestCaseBlock({ tc, index, onChange, onRemove, darkMode }) {
             onFocus={() => setInputFocus(true)}
             onBlur={() => setInputFocus(false)}
             rows={5}
-            className={`w-full px-3 py-2.5 text-[13px] rounded-[6px] outline-none resize-none transition-all duration-150 ${darkMode ? 'bg-slate-950 text-white' : 'bg-white text-[#1C1B1F]'}`}
+            className={`w-full px-3 py-2.5 text-[13px] rounded-[6px] outline-none resize-none transition-all duration-150 ${darkMode ? 'bg-neutral-950 text-white' : 'bg-white text-[#1C1B1F]'}`}
             style={{
-              border: inputFocus ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`,
+              border: inputFocus ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
               fontFamily: "'JetBrains Mono', monospace",
               lineHeight: "1.65",
             }}
           />
         </div>
         <div className="flex flex-col gap-1.5 p-3">
-          <div className={`text-[11px] font-bold uppercase tracking-wider font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>
+          <div className={`text-[11px] font-bold uppercase tracking-wider font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
             Expected Output
           </div>
           <textarea
@@ -307,9 +307,9 @@ function TestCaseBlock({ tc, index, onChange, onRemove, darkMode }) {
             onFocus={() => setOutputFocus(true)}
             onBlur={() => setOutputFocus(false)}
             rows={5}
-            className={`w-full px-3 py-2.5 text-[13px] rounded-[6px] outline-none resize-none transition-all duration-150 ${darkMode ? 'bg-slate-950 text-white' : 'bg-white text-[#1C1B1F]'}`}
+            className={`w-full px-3 py-2.5 text-[13px] rounded-[6px] outline-none resize-none transition-all duration-150 ${darkMode ? 'bg-neutral-950 text-white' : 'bg-white text-[#1C1B1F]'}`}
             style={{
-              border: outputFocus ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}`,
+              border: outputFocus ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
               fontFamily: "'JetBrains Mono', monospace",
               lineHeight: "1.65",
             }}
@@ -328,18 +328,18 @@ function PreviewModal({ onClose, title, difficulty, points, timeLimit, memLimit,
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-6" style={{ backgroundColor: "rgba(28,27,31,0.45)", backdropFilter: "blur(3px)" }}>
-      <div className={`flex flex-col w-full max-w-3xl h-full max-h-[85vh] rounded-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
+      <div className={`flex flex-col w-full max-w-3xl h-full max-h-[85vh] rounded-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-neutral-900 border border-neutral-800' : 'bg-white'}`}>
         
         {/* Modal Header */}
-        <div className={`flex items-center justify-between px-8 py-5 border-b flex-shrink-0 ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+        <div className={`flex items-center justify-between px-8 py-5 border-b flex-shrink-0 ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
           <div className="flex flex-col">
-            <span className={`text-[12px] font-bold tracking-wider uppercase font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#9AA0A6]'}`}>Contestant Preview</span>
+            <span className={`text-[12px] font-bold tracking-wider uppercase font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#9AA0A6]'}`}>Contestant Preview</span>
             <h2 className={`text-[20px] font-bold font-['DM_Sans'] mt-1 ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
               {title || "Untitled Problem"}
             </h2>
           </div>
-          <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-[#F1F3F4]'}`}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke={darkMode ? "#94A3B8" : "#5F6368"} strokeWidth="1.6" strokeLinecap="round" /></svg>
+          <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-neutral-800' : 'hover:bg-[#F1F3F4]'}`}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.6" strokeLinecap="round" /></svg>
           </button>
         </div>
 
@@ -348,19 +348,19 @@ function PreviewModal({ onClose, title, difficulty, points, timeLimit, memLimit,
           
           {/* Badges / Constraints */}
           <div className="flex flex-wrap items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-[12px] font-semibold font-['Roboto'] ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-[#F1F3F4] text-[#5F6368]'}`}>
+            <span className={`px-3 py-1 rounded-full text-[12px] font-semibold font-['Roboto'] ${darkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-[#F1F3F4] text-[#5F6368]'}`}>
               Difficulty: {difficulty}
             </span>
             <span className={`px-3 py-1 rounded-full text-[12px] font-bold font-['DM_Sans'] ${darkMode ? 'bg-blue-950/40 text-blue-400' : 'bg-[#E8F0FE] text-[#3A7CF5]'}`}>
               {points} pts
             </span>
             {timeLimit && (
-              <span className={`px-3 py-1 rounded-full text-[12px] font-medium font-['Roboto'] ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-white border border-[#E0E0E0] text-[#5F6368]'}`}>
+              <span className={`px-3 py-1 rounded-full text-[12px] font-medium font-['Roboto'] ${darkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-white border border-[#E0E0E0] text-[#5F6368]'}`}>
                 Time: {timeLimit}s
               </span>
             )}
             {memLimit && (
-              <span className={`px-3 py-1 rounded-full text-[12px] font-medium font-['Roboto'] ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-white border border-[#E0E0E0] text-[#5F6368]'}`}>
+              <span className={`px-3 py-1 rounded-full text-[12px] font-medium font-['Roboto'] ${darkMode ? 'bg-neutral-800 text-neutral-300' : 'bg-white border border-[#E0E0E0] text-[#5F6368]'}`}>
                 Memory: {memLimit}MB
               </span>
             )}
@@ -368,8 +368,8 @@ function PreviewModal({ onClose, title, difficulty, points, timeLimit, memLimit,
 
           {/* Statement */}
           <div className="flex flex-col gap-2">
-            <h3 className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-slate-200' : 'text-[#3C4043]'}`}>Problem Statement</h3>
-            <p className={`text-[14px] leading-relaxed whitespace-pre-wrap font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>
+            <h3 className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#3C4043]'}`}>Problem Statement</h3>
+            <p className={`text-[14px] leading-relaxed whitespace-pre-wrap font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
               {statement || "No description provided."}
             </p>
           </div>
@@ -377,20 +377,20 @@ function PreviewModal({ onClose, title, difficulty, points, timeLimit, memLimit,
           {/* Visible Test Cases */}
           {visibleCases.length > 0 && (
             <div className="flex flex-col gap-4">
-              <h3 className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-slate-200' : 'text-[#3C4043]'}`}>Sample Test Cases</h3>
+              <h3 className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#3C4043]'}`}>Sample Test Cases</h3>
               {visibleCases.map((tc, idx) => (
-                <div key={tc.id} className={`flex flex-col rounded-[8px] border overflow-hidden ${darkMode ? 'border-slate-700' : 'border-[#E0E0E0]'}`}>
-                  <div className={`px-4 py-2 text-[12px] font-bold border-b font-['DM_Sans'] ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-[#F8F9FA] border-[#E0E0E0] text-[#5F6368]'}`}>
+                <div key={tc.id} className={`flex flex-col rounded-[8px] border overflow-hidden ${darkMode ? 'border-neutral-700' : 'border-[#E0E0E0]'}`}>
+                  <div className={`px-4 py-2 text-[12px] font-bold border-b font-['DM_Sans'] ${darkMode ? 'bg-neutral-800 border-neutral-700 text-neutral-300' : 'bg-[#F8F9FA] border-[#E0E0E0] text-[#5F6368]'}`}>
                     Sample #{idx + 1}
                   </div>
                   <div className="grid grid-cols-2">
-                    <div className={`p-4 border-r ${darkMode ? 'border-slate-700 bg-slate-900' : 'border-[#E0E0E0] bg-white'}`}>
-                      <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>Input</div>
-                      <pre className={`text-[13px] font-['JetBrains_Mono'] ${darkMode ? 'text-slate-300' : 'text-[#1C1B1F]'}`}>{tc.input || " "}</pre>
+                    <div className={`p-4 border-r ${darkMode ? 'border-neutral-700 bg-neutral-900' : 'border-[#E0E0E0] bg-white'}`}>
+                      <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Input</div>
+                      <pre className={`text-[13px] font-['JetBrains_Mono'] ${darkMode ? 'text-neutral-300' : 'text-[#1C1B1F]'}`}>{tc.input || " "}</pre>
                     </div>
-                    <div className={`p-4 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-                      <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>Output</div>
-                      <pre className={`text-[13px] font-['JetBrains_Mono'] ${darkMode ? 'text-slate-300' : 'text-[#1C1B1F]'}`}>{tc.output || " "}</pre>
+                    <div className={`p-4 ${darkMode ? 'bg-neutral-900' : 'bg-white'}`}>
+                      <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Output</div>
+                      <pre className={`text-[13px] font-['JetBrains_Mono'] ${darkMode ? 'text-neutral-300' : 'text-[#1C1B1F]'}`}>{tc.output || " "}</pre>
                     </div>
                   </div>
                 </div>
@@ -462,7 +462,7 @@ export default function ProblemCreator() {
           <h1 className={`text-[26px] font-bold tracking-[-0.4px] font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
             Contest Problem Creator
           </h1>
-          <p className={`text-[14px] mt-1 font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>
+          <p className={`text-[14px] mt-1 font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
             Draft programming tasks, set constraints, and configure Judge0 test cases.
           </p>
         </div>
@@ -487,10 +487,10 @@ export default function ProblemCreator() {
       </div>
 
       {/* Main form card */}
-      <div className={`rounded-[16px] overflow-hidden border shadow-sm ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E0E0E0]'}`}>
+      <div className={`rounded-[16px] overflow-hidden border shadow-sm ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
 
         {/* Card header */}
-        <div className={`flex items-center justify-between px-7 py-4 border-b ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+        <div className={`flex items-center justify-between px-7 py-4 border-b ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: darkMode ? "rgba(58,124,245,0.15)" : "#E8F0FE" }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -499,12 +499,12 @@ export default function ProblemCreator() {
               </svg>
             </div>
             <span className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>New Problem</span>
-            <span className={`text-[12px] px-2 py-0.5 rounded-full font-['Roboto'] ${darkMode ? 'bg-slate-800 text-slate-400' : 'bg-[#F1F3F4] text-[#9AA0A6]'}`}>Draft</span>
+            <span className={`text-[12px] px-2 py-0.5 rounded-full font-['Roboto'] ${darkMode ? 'bg-neutral-800 text-neutral-400' : 'bg-[#F1F3F4] text-[#9AA0A6]'}`}>Draft</span>
           </div>
 
           {/* Problem letter picker */}
           <div className="flex items-center gap-3">
-            <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#9AA0A6]'}`}>Problem Letter:</span>
+            <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#9AA0A6]'}`}>Problem Letter:</span>
             <ProblemLetterPicker value={letter} onChange={setLetter} darkMode={darkMode} />
           </div>
         </div>
@@ -513,10 +513,10 @@ export default function ProblemCreator() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
 
           {/* ── Left: Problem Details ── */}
-          <div className={`flex flex-col gap-5 px-7 py-6 border-b lg:border-b-0 lg:border-r ${darkMode ? 'border-slate-800' : 'border-[#F1F3F4]'}`}>
+          <div className={`flex flex-col gap-5 px-7 py-6 border-b lg:border-b-0 lg:border-r ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
             <div className="flex items-center gap-2 mb-1">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-[#3A7CF5] font-['DM_Sans']">1</div>
-              <span className={`text-[13px] font-bold uppercase tracking-wider font-['DM_Sans'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>Problem Details</span>
+              <span className={`text-[13px] font-bold uppercase tracking-wider font-['DM_Sans'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>Problem Details</span>
             </div>
 
             {/* Title */}
@@ -572,20 +572,20 @@ export default function ProblemCreator() {
             {/* Problem statement */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel required darkMode={darkMode}>Problem Statement & Guidelines</FieldLabel>
-              <div className="rounded-[8px] overflow-hidden transition-all duration-150" style={{ border: `1.5px solid ${darkMode ? '#334155' : '#E0E0E0'}` }}>
+              <div className="rounded-[8px] overflow-hidden transition-all duration-150" style={{ border: `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}` }}>
                 <RichToolbar darkMode={darkMode} />
                 <textarea
                   value={statement}
                   onChange={e => setStatement(e.target.value)}
                   placeholder={"Write the problem description, input specs, and output formats here...\n\nTip: Use **bold** for important terms, `code` for inline code, and ```code blocks``` for examples."}
                   rows={9}
-                  className={`w-full px-4 py-3 text-[14px] outline-none resize-none ${darkMode ? 'bg-slate-950 text-white placeholder-slate-600' : 'bg-white text-[#1C1B1F] placeholder-slate-400'}`}
+                  className={`w-full px-4 py-3 text-[14px] outline-none resize-none ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-white text-[#1C1B1F] placeholder-neutral-400'}`}
                   style={{ fontFamily: "'Roboto', sans-serif", lineHeight: "1.75", border: "none" }}
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>Supports Markdown and LaTeX math expressions</span>
-                <span className={`text-[11px] tabular-nums font-['Roboto'] ${darkMode ? 'text-slate-500' : 'text-[#9AA0A6]'}`}>{statement.length} chars</span>
+                <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Supports Markdown and LaTeX math expressions</span>
+                <span className={`text-[11px] tabular-nums font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>{statement.length} chars</span>
               </div>
             </div>
           </div>
@@ -594,18 +594,18 @@ export default function ProblemCreator() {
           <div className="flex flex-col gap-5 px-7 py-6">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-[#34A853] font-['DM_Sans']">2</div>
-              <span className={`text-[13px] font-bold uppercase tracking-wider font-['DM_Sans'] ${darkMode ? 'text-slate-300' : 'text-[#3C4043]'}`}>Test Cases & Evaluation</span>
+              <span className={`text-[13px] font-bold uppercase tracking-wider font-['DM_Sans'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>Test Cases & Evaluation</span>
             </div>
 
             {/* Legend */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-[3px] bg-[#3A7CF5]" />
-                <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>Visible = shown to contestants</span>
+                <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>Visible = shown to contestants</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className={`w-3 h-3 rounded-[3px] ${darkMode ? 'bg-slate-700' : 'bg-[#E0E0E0]'}`} />
-                <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#5F6368]'}`}>Hidden = graded by Judge0 only</span>
+                <div className={`w-3 h-3 rounded-[3px] ${darkMode ? 'bg-neutral-700' : 'bg-[#E0E0E0]'}`} />
+                <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>Hidden = graded by Judge0 only</span>
               </div>
             </div>
 
@@ -626,9 +626,9 @@ export default function ProblemCreator() {
             {/* Add test case button */}
             <button
               onClick={addTC}
-              className={`flex items-center justify-center gap-2 w-full py-3 rounded-[8px] text-[13px] font-semibold transition-all duration-150 font-['DM_Sans'] ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-blue-400 hover:border-blue-500' : 'text-[#5F6368] hover:bg-[#E8F0FE] hover:text-[#3A7CF5] hover:border-[#3A7CF5]'}`}
+              className={`flex items-center justify-center gap-2 w-full py-3 rounded-[8px] text-[13px] font-semibold transition-all duration-150 font-['DM_Sans'] ${darkMode ? 'text-neutral-400 hover:bg-neutral-800 hover:text-blue-400 hover:border-blue-500' : 'text-[#5F6368] hover:bg-[#E8F0FE] hover:text-[#3A7CF5] hover:border-[#3A7CF5]'}`}
               style={{
-                border: `1.5px dashed ${darkMode ? '#475569' : '#C4C7CC'}`,
+                border: `1.5px dashed ${darkMode ? '#525252' : '#C4C7CC'}`,
                 backgroundColor: "transparent",
               }}
             >
@@ -639,12 +639,12 @@ export default function ProblemCreator() {
             </button>
 
             {/* Judge0 note */}
-            <div className={`flex items-start gap-3 p-4 rounded-[10px] border border-dashed ${darkMode ? 'bg-slate-950 border-slate-700' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`}>
+            <div className={`flex items-start gap-3 p-4 rounded-[10px] border border-dashed ${darkMode ? 'bg-neutral-950 border-neutral-700' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`}>
               <svg width="15" height="15" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
-                <circle cx="8" cy="8" r="7" stroke={darkMode ? "#64748B" : "#9AA0A6"} strokeWidth="1.3" />
-                <path d="M8 7v4M8 5h.01" stroke={darkMode ? "#64748B" : "#9AA0A6"} strokeWidth="1.3" strokeLinecap="round" />
+                <circle cx="8" cy="8" r="7" stroke={darkMode ? "#737373" : "#9AA0A6"} strokeWidth="1.3" />
+                <path d="M8 7v4M8 5h.01" stroke={darkMode ? "#737373" : "#9AA0A6"} strokeWidth="1.3" strokeLinecap="round" />
               </svg>
-              <p className={`text-[12px] leading-relaxed font-['Roboto'] ${darkMode ? 'text-slate-400' : 'text-[#9AA0A6]'}`}>
+              <p className={`text-[12px] leading-relaxed font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#9AA0A6]'}`}>
                 Hidden test cases are evaluated by Judge0. Visible cases are shown as preview samples on the contest problem page.
               </p>
             </div>
@@ -653,7 +653,7 @@ export default function ProblemCreator() {
 
         {/* Form action bar */}
         <div
-          className={`flex items-center justify-between px-7 py-4 border-t ${darkMode ? 'border-slate-800 bg-slate-900/50' : 'border-[#F1F3F4] bg-[#FAFAFA]'}`}
+          className={`flex items-center justify-between px-7 py-4 border-t ${darkMode ? 'border-neutral-800 bg-neutral-900/50' : 'border-[#F1F3F4] bg-[#FAFAFA]'}`}
         >
           <div className="flex items-center gap-2">
             {saved && (
@@ -680,11 +680,11 @@ export default function ProblemCreator() {
             {/* Preview Button */}
             <button
               onClick={() => setShowPreview(true)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-[8px] text-[13px] font-medium transition-colors border font-['DM_Sans'] ${darkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-[8px] text-[13px] font-medium transition-colors border font-['DM_Sans'] ${darkMode ? 'border-neutral-700 text-neutral-300 hover:bg-neutral-800' : 'border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M1 7s2.5-5 6-5 6 5 6 5-2.5 5-6 5S1 7 1 7Z" stroke={darkMode ? "#CBD5E1" : "#5F6368"} strokeWidth="1.3" />
-                <circle cx="7" cy="7" r="2" stroke={darkMode ? "#CBD5E1" : "#5F6368"} strokeWidth="1.3" />
+                <path d="M1 7s2.5-5 6-5 6 5 6 5-2.5 5-6 5S1 7 1 7Z" stroke={darkMode ? "#D4D4D4" : "#5F6368"} strokeWidth="1.3" />
+                <circle cx="7" cy="7" r="2" stroke={darkMode ? "#D4D4D4" : "#5F6368"} strokeWidth="1.3" />
               </svg>
               Preview
             </button>
@@ -692,12 +692,12 @@ export default function ProblemCreator() {
             {/* Save draft */}
             <button
               onClick={handleSave}
-              className={`flex items-center gap-1.5 px-5 py-2.5 rounded-[8px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
+              className={`flex items-center gap-1.5 px-5 py-2.5 rounded-[8px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] ${darkMode ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' : 'bg-white border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <rect x="2" y="1" width="10" height="12" rx="1.5" stroke={darkMode ? "#CBD5E1" : "#5F6368"} strokeWidth="1.3" />
-                <path d="M5 1v4h4V1" stroke={darkMode ? "#CBD5E1" : "#5F6368"} strokeWidth="1.3" strokeLinejoin="round" />
-                <path d="M4 8h6M4 10.5h4" stroke={darkMode ? "#CBD5E1" : "#5F6368"} strokeWidth="1.3" strokeLinecap="round" />
+                <rect x="2" y="1" width="10" height="12" rx="1.5" stroke={darkMode ? "#D4D4D4" : "#5F6368"} strokeWidth="1.3" />
+                <path d="M5 1v4h4V1" stroke={darkMode ? "#D4D4D4" : "#5F6368"} strokeWidth="1.3" strokeLinejoin="round" />
+                <path d="M4 8h6M4 10.5h4" stroke={darkMode ? "#D4D4D4" : "#5F6368"} strokeWidth="1.3" strokeLinecap="round" />
               </svg>
               Save Draft
             </button>
