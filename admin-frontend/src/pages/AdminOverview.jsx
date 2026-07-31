@@ -678,8 +678,8 @@ export default function AdminOverview() {
               : `/ ${stats?.registered_teams ?? 0} registered`,
             accent: "#4285F4",
             bg: darkMode ? "rgba(66,133,244,0.15)" : "#E8F0FE",
-            change: "+2 in last 10 min",
-            changeUp: true,
+            change: "",
+            changeUp: false,
             sparkPoints: [30, 34, 33, 36, 38, 40, 42],
             icon: (
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
