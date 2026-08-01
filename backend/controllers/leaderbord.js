@@ -315,12 +315,9 @@ const formatDuration = (ms) => {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 };
 
-//displays the leaderboard per competition
-const getLeaderboard = async (req,res) => {
-
-    try {
-
-        const {competitionId} = req.params;
+//builds the ranked leaderboard payload for a competition — shared by the
+//participant-facing route and the admin contest archive.
+const buildLeaderboard = async (competitionId) => {
 
         const competitionResult = await pool.query(
             `SELECT started_at FROM competitions WHERE competition_id = $1`,
@@ -328,9 +325,7 @@ const getLeaderboard = async (req,res) => {
         );
 
         if (competitionResult.rows.length === 0) {
-            return res.status(404).json({
-                message: "Competition not found.",
-            });
+            return null;
         }
 
         const contestStartedAt = competitionResult.rows[0].started_at;
@@ -460,6 +455,25 @@ const getLeaderboard = async (req,res) => {
             };
         });
 
+        return leaderboard;
+
+};
+
+//displays the leaderboard per competition
+const getLeaderboard = async (req, res) => {
+
+    try {
+
+        const { competitionId } = req.params;
+
+        const leaderboard = await buildLeaderboard(competitionId);
+
+        if (leaderboard === null) {
+            return res.status(404).json({
+                message: "Competition not found.",
+            });
+        }
+
         return res.status(200).json(leaderboard);
 
     }
@@ -487,6 +501,7 @@ module.exports = {
     getProblemPoints,
     assignPoints,
     recalculateRanks,
+    buildLeaderboard,
     storeLeaderboard,
     getLeaderboard
 

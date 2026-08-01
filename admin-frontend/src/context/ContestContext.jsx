@@ -78,6 +78,7 @@ export function ContestProvider({ children }) {
         selectedContestId,
         selectedContest,
         setSelectedContestId,
+        refreshCompetitions: fetchCompetitions,
       }}
     >
       {children}
