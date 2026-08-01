@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from 'react-router-dom';
+import { useContest } from '../context/ContestContext';
 
 // Constants & Status Badges 
 
@@ -59,15 +60,13 @@ const TEAM_COLORS = [
 function AnnouncementModal({
     onClose,
     darkMode,
+    competitionId,
+    competitionName,
   }) {
     const [title, setTitle] = useState("");
     const [message, setMessage] = useState("");
     const [submitError, setSubmitError] = useState("");
     const [submitting, setSubmitting] = useState(false);
-    const [competitions, setCompetitions] = useState([]);
-    const [competitionId, setCompetitionId] = useState("");
-    const [loadingCompetitions, setLoadingCompetitions] =
-      useState(true);
 
     const handlePublish = async () => {
       if (!title.trim() || !message.trim()) {
@@ -78,7 +77,7 @@ function AnnouncementModal({
       }
 
       if (!competitionId) {
-        setSubmitError("Please select a competition.");
+        setSubmitError("No contest selected — pick one from the navbar first.");
         return;
       }
 
@@ -118,51 +117,6 @@ function AnnouncementModal({
         setSubmitting(false);
       }
     };
-
-    useEffect(() => {
-      const fetchCompetitions = async () => {
-        try {
-          const response = await fetch(
-            "http://localhost:5000/api/admin/overview/competitions",
-            {
-              credentials: "include",
-            }
-          );
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(
-              data.message || "Failed to load competitions"
-            );
-          }
-
-          setCompetitions(data.competitions || []);
-
-          const activeCompetition =
-            data.competitions?.find(
-              (competition) =>
-                competition.status === "Active"
-            );
-
-          if (activeCompetition) {
-            setCompetitionId(
-              String(activeCompetition.competition_id)
-            );
-          } else if (data.competitions?.length > 0) {
-            setCompetitionId(
-              String(data.competitions[0].competition_id)
-            );
-          }
-        } catch (error) {
-          setSubmitError(error.message);
-        } finally {
-          setLoadingCompetitions(false);
-        }
-      };
-
-      fetchCompetitions();
-    }, []);
 
     return (
       <div
@@ -281,43 +235,23 @@ function AnnouncementModal({
                 Competition
               </label>
 
-              <select
-                value={competitionId}
-                onChange={(event) =>
-                  setCompetitionId(event.target.value)
-                }
-                disabled={loadingCompetitions || submitting}
-                className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none border ${
+              <div
+                className={`w-full px-4 py-3 text-[14px] rounded-[8px] border font-semibold ${
                   darkMode
                     ? "bg-neutral-950 border-neutral-700 text-white"
-                    : "bg-white border-[#E0E0E0] text-[#1C1B1F]"
+                    : "bg-[#F8F9FA] border-[#E0E0E0] text-[#1C1B1F]"
                 }`}
               >
-                {loadingCompetitions && (
-                  <option value="">
-                    Loading competitions...
-                  </option>
-                )}
+                {competitionName || "No contest selected"}
+              </div>
 
-                {!loadingCompetitions &&
-                  competitions.length === 0 && (
-                    <option value="">
-                      No competitions available
-                    </option>
-                  )}
-
-                {competitions.map((competition) => (
-                  <option
-                    key={competition.competition_id}
-                    value={competition.competition_id}
-                  >
-                    {competition.competition_name}
-                    {competition.status
-                      ? ` — ${competition.status}`
-                      : ""}
-                  </option>
-                ))}
-              </select>
+              <span
+                className={`text-[11px] font-['Roboto'] ${
+                  darkMode ? "text-neutral-500" : "text-[#9AA0A6]"
+                }`}
+              >
+                Change the contest from the dropdown in the navbar.
+              </span>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -464,10 +398,11 @@ function ViewAllModal({ onClose, darkMode, submissions }) {
 
 export default function AdminOverview() {
   const { darkMode } = useOutletContext() || {};
+  const { selectedContestId, selectedContest } = useContest();
   const [overviewData, setOverviewData] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [overviewError, setOverviewError] = useState("");
-  
+
   const [showFilter, setShowFilter] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [showAllFeeds, setShowAllFeeds] = useState(false);
@@ -477,8 +412,15 @@ export default function AdminOverview() {
   const [filterErrorsWarnings, setFilterErrorsWarnings] = useState(false);
 
   useEffect(() => {
+    if (!selectedContestId) {
+      setOverviewData(null);
+      setOverviewLoading(false);
+      return;
+    }
+
+    let ignore = false;
+
     const fetchOverview = async () => {
-      
       try {
         if (!overviewData) {
           setOverviewLoading(true);
@@ -486,7 +428,7 @@ export default function AdminOverview() {
         setOverviewError("");
 
         const response = await fetch(
-          "http://localhost:5000/api/admin/overview?competition_id=1",
+          `http://localhost:5000/api/admin/overview?competition_id=${selectedContestId}`,
           {
             method: "GET",
             credentials: "include",
@@ -501,27 +443,25 @@ export default function AdminOverview() {
           );
         }
 
-        setOverviewData(data);
+        if (!ignore) setOverviewData(data);
       } catch (error) {
         console.error("Fetch overview error:", error);
-        setOverviewError(error.message);
+        if (!ignore) setOverviewError(error.message);
       } finally {
-        setOverviewLoading(false);
+        if (!ignore) setOverviewLoading(false);
       }
     };
 
     fetchOverview();
 
-    const intervalId = setInterval(
-        fetchOverview,
-        5000
-      );
+    const intervalId = setInterval(fetchOverview, 5000);
 
-      return () => {
-        clearInterval(intervalId);
-      };
-      
-  }, []);
+    return () => {
+      ignore = true;
+      clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedContestId]);
 
   const isAllSubmissions = !filterAcceptedOnly && !filterErrorsWarnings;
 
@@ -579,6 +519,29 @@ export default function AdminOverview() {
       return false;
     });
   }, [submissions, filterAcceptedOnly, filterErrorsWarnings, isAllSubmissions,]);
+
+  if (!selectedContestId) {
+    return (
+      <div className="flex flex-col gap-7">
+        <div>
+          <h1 className={`text-[26px] font-bold tracking-[-0.4px] font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
+            Live Contest Dashboard
+          </h1>
+          <p className={`text-[14px] mt-1 font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
+            Monitor real-time contest activity and team submissions.
+          </p>
+        </div>
+        <div className={`rounded-[16px] px-6 py-16 border shadow-sm flex flex-col items-center justify-center gap-2 text-center ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
+          <span className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
+            No contest selected
+          </span>
+          <span className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
+            Pick a live or upcoming contest from the dropdown in the navbar to see its dashboard.
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-7 relative">
@@ -819,7 +782,14 @@ export default function AdminOverview() {
       </div>
 
       {/* Render Modals */}
-      {showAnnouncement && (<AnnouncementModal onClose={() => setShowAnnouncement(false)} darkMode={darkMode} />)}
+      {showAnnouncement && (
+        <AnnouncementModal
+          onClose={() => setShowAnnouncement(false)}
+          darkMode={darkMode}
+          competitionId={selectedContestId}
+          competitionName={selectedContest?.competition_name}
+        />
+      )}
       {showAllFeeds && <ViewAllModal onClose={() => setShowAllFeeds(false)} darkMode={darkMode} submissions={filteredSubmissions} />}
     </div>
   );

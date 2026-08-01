@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useEffect } from "react";
 import axios from "axios";
+import { useContest } from "../context/ContestContext";
 
 
 const api = axios.create({
@@ -317,6 +318,7 @@ function EditTeamModal({ team, onClose, onEdit, darkMode }) {
 
 export default function TeamManagement() {
   const { darkMode } = useOutletContext() || {};
+  const { selectedContestId } = useContest();
 
   const [teams, setTeams] = useState([]);
   const [search, setSearch] = useState("");
@@ -326,17 +328,22 @@ export default function TeamManagement() {
   const [searchFocus, setSearchFocus] = useState(false);
 
   const fetchTeams = async () => {
+    if (!selectedContestId) {
+      setTeams([]);
+      return;
+    }
     try {
-      const response = await api.get("/teams");
+      const response = await api.get("/teams", { params: { competition_id: selectedContestId } });
       setTeams(response.data.teams);
     } catch (error) {
       console.error(error);
     }
   };
-  //not error 
+
   useEffect(() => {
     fetchTeams();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedContestId]);
 
     const filtered = teams.filter(t =>
       t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -345,10 +352,11 @@ export default function TeamManagement() {
 
   const handleAdd = async (name, code) => {
       try {
-        
+
           await api.post("/teams", {
               team_name: name,
-              access_code: code
+              access_code: code,
+              competition_id: selectedContestId,
           });
 
           fetchTeams();
@@ -396,9 +404,32 @@ export default function TeamManagement() {
 
   };
 
+  if (!selectedContestId) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className={`text-[26px] font-bold tracking-[-0.4px] font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
+            Manage Contest Teams
+          </h1>
+          <p className={`text-[14px] mt-1 font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
+            Register participating teams and manage credentials.
+          </p>
+        </div>
+        <div className={`rounded-[16px] px-6 py-16 border shadow-sm flex flex-col items-center justify-center gap-2 text-center ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
+          <span className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
+            No contest selected
+          </span>
+          <span className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
+            Pick a live or upcoming contest from the dropdown in the navbar to manage its teams.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      
+
       {/* Page title + action bar */}
       <div className="flex items-end justify-between">
         <div>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import axios from "axios";
+import { useContest } from "../context/ContestContext";
 
 // Config 
 
@@ -331,9 +332,9 @@ const BLANK_TEST_CASES = [{ id: 1, visible: true, input: "", output: "" }];
 export default function ProblemCreator() {
   const { darkMode } = useOutletContext() || {};
 
-  // Competition selection
-  const [competitions, setCompetitions] = useState([]);
-  const [competitionId, setCompetitionId] = useState(null);
+  // Which competition we're editing is chosen globally from the navbar dropdown.
+  const { selectedContestId } = useContest();
+
   // All problems that already exist in the currently selected competition —
   // used to know which letters are taken and to load a problem's data when picked.
   const [competitionProblems, setCompetitionProblems] = useState([]);
@@ -363,36 +364,18 @@ export default function ProblemCreator() {
   const [testCases, setTestCases] = useState(BLANK_TEST_CASES);
   const nextId = Math.max(0, ...testCases.map(t => t.id)) + 1;
 
-  // 1) Load the list of competitions once, and default to the first one.
-  useEffect(() => {
-    let ignore = false;
-
-    const loadCompetitions = async () => {
-      try {
-        const response = await api.get("/competitions");
-        if (ignore) return;
-        setCompetitions(response.data.competitions);
-        if (response.data.competitions.length > 0) {
-          setCompetitionId(response.data.competitions[0].competition_id);
-        }
-      } catch (error) {
-        if (!ignore) console.error(error);
-      }
-    };
-
-    loadCompetitions();
-    return () => { ignore = true; };
-  }, []);
-
-  // 2) Whenever the selected competition changes, load that competition's
+  // Whenever the globally-selected competition changes, load that competition's
   // problems (just the lightweight list — no test cases yet).
   useEffect(() => {
-    if (!competitionId) return;
+    if (!selectedContestId) {
+      setCompetitionProblems([]);
+      return;
+    }
     let ignore = false;
 
     const loadProblems = async () => {
       try {
-        const response = await api.get("/problems", { params: { competition_id: competitionId } });
+        const response = await api.get("/problems", { params: { competition_id: selectedContestId } });
         if (!ignore) setCompetitionProblems(response.data.problems);
       } catch (error) {
         if (!ignore) console.error(error);
@@ -401,7 +384,7 @@ export default function ProblemCreator() {
 
     loadProblems();
     return () => { ignore = true; };
-  }, [competitionId]);
+  }, [selectedContestId]);
 
   // 3) Whenever the chosen letter (or the competition's problem list) changes,
   // check if a problem already exists for that letter in this competition.
@@ -480,7 +463,7 @@ export default function ProblemCreator() {
     time_limit: timeLimit,       // backend converts seconds -> milliseconds
     memory_limit_mb: memLimit,   // backend defaults to 256 if empty
     is_published: isPublished,
-    competition_id: competitionId,
+    competition_id: selectedContestId,
     test_cases: testCases.map(tc => ({
       input_data: tc.input,
       expected_output: tc.output,
@@ -510,7 +493,7 @@ export default function ProblemCreator() {
 
       // Refresh the competition's problem list so the letter picker's
       // "taken" dots stay accurate without needing a page reload.
-      const listResponse = await api.get("/problems", { params: { competition_id: competitionId } });
+      const listResponse = await api.get("/problems", { params: { competition_id: selectedContestId } });
       setCompetitionProblems(listResponse.data.problems);
 
       return true;
@@ -584,28 +567,23 @@ export default function ProblemCreator() {
         </div>
       </div>
 
-      {/* Competition selector */}
-      <div className={`rounded-[16px] px-6 py-4 border shadow-sm flex items-center gap-4 ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
-        <span className={`text-[13px] font-bold font-['DM_Sans'] whitespace-nowrap ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>
-          Competition:
-        </span>
-        <div className="w-full max-w-[320px]">
-          <SelectInput
-            value={competitionId ?? ""}
-            onChange={val => setCompetitionId(Number(val))}
-            darkMode={darkMode}
-            options={competitions.map(c => ({
-              label: `${c.competition_name} (${c.status})`,
-              value: c.competition_id,
-            }))}
-          />
-        </div>
-        {loadingExisting && (
-          <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
-            Loading problem data...
+      {!selectedContestId ? (
+        <div className={`rounded-[16px] px-6 py-10 border shadow-sm flex flex-col items-center justify-center gap-2 text-center ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
+          <span className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
+            No contest selected
           </span>
-        )}
-      </div>
+          <span className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
+            Pick a live or upcoming contest from the dropdown in the navbar to start creating problems.
+          </span>
+        </div>
+      ) : (
+      <>
+
+      {loadingExisting && (
+        <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
+          Loading problem data...
+        </span>
+      )}
 
       {/* Main form card */}
       <div className={`rounded-[16px] overflow-hidden border shadow-sm ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
@@ -860,6 +838,8 @@ export default function ProblemCreator() {
           testCases={testCases}
           darkMode={darkMode}
         />
+      )}
+      </>
       )}
 
     </div>

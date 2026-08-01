@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useContest } from "../context/ContestContext";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -6,17 +7,23 @@ export default function AdminHeader({
   darkMode,
   setDarkMode,
 }) {
+  const {
+    competitions,
+    selectedContestId,
+    selectedContest,
+    setSelectedContestId,
+  } = useContest();
+
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] =
     useState(false);
+  const [showContestMenu, setShowContestMenu] = useState(false);
 
   const [themeLoading, setThemeLoading] = useState(true);
   const [themeUpdating, setThemeUpdating] =
     useState(false);
 
   const [admin, setAdmin] = useState(null);
-  const [competitions, setCompetitions] = useState([]);
-  const [activeCompetition, setActiveCompetition] = useState(null);
   const [competitionStatus, setCompetitionStatus] = useState("none"); // "none" | "before" | "live"
   const [remainingTime, setRemainingTime] = useState("00:00:00");
   const [dataLoading, setDataLoading] = useState(true);
@@ -97,38 +104,6 @@ export default function AdminHeader({
     fetchAdminTheme();
   }, [setDarkMode]);
 
-  useEffect(() => {
-    const fetchCompetitions = async () => {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/admin/overview/competitions`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Failed to fetch competitions"
-          );
-        }
-
-        setCompetitions(data.competitions || []);
-      } catch (error) {
-        console.error("Fetch competitions error:", error);
-      }
-    };
-
-    fetchCompetitions();
-
-    const intervalId = setInterval(fetchCompetitions, 30000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
   const handleThemeToggle = async () => {
     if (themeLoading || themeUpdating) {
       return;
@@ -190,43 +165,32 @@ export default function AdminHeader({
 
   useEffect(() => {
     const updateTimer = () => {
-      const now = new Date();
-
-      const running = competitions.find(
-        (competition) =>
-          new Date(competition.started_at) <= now &&
-          now <= new Date(competition.ended_at)
-      );
-
-      if (running) {
-        setActiveCompetition(running);
-        setCompetitionStatus("live");
-        setRemainingTime(
-          formatDuration(
-            Math.max(new Date(running.ended_at).getTime() - now.getTime(), 0)
-          )
-        );
+      if (!selectedContest) {
+        setCompetitionStatus("none");
+        setRemainingTime("00:00:00");
         return;
       }
 
-      const upcoming = competitions
-        .filter((competition) => new Date(competition.started_at) > now)
-        .sort(
-          (a, b) => new Date(a.started_at) - new Date(b.started_at)
-        )[0];
+      const now = new Date();
+      const startedAt = new Date(selectedContest.started_at);
+      const endedAt = new Date(selectedContest.ended_at);
 
-      if (upcoming) {
-        setActiveCompetition(upcoming);
+      if (now < startedAt) {
         setCompetitionStatus("before");
         setRemainingTime(
-          formatDuration(
-            Math.max(new Date(upcoming.started_at).getTime() - now.getTime(), 0)
-          )
+          formatDuration(Math.max(startedAt.getTime() - now.getTime(), 0))
         );
         return;
       }
 
-      setActiveCompetition(null);
+      if (now <= endedAt) {
+        setCompetitionStatus("live");
+        setRemainingTime(
+          formatDuration(Math.max(endedAt.getTime() - now.getTime(), 0))
+        );
+        return;
+      }
+
       setCompetitionStatus("none");
       setRemainingTime("00:00:00");
     };
@@ -236,16 +200,104 @@ export default function AdminHeader({
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [competitions]);
+  }, [selectedContest]);
 
   return (
     <header
-      className={`flex-shrink-0 flex items-center justify-end px-8 h-[64px] border-b transition-colors z-30 ${
+      className={`flex-shrink-0 flex items-center justify-between px-8 h-[64px] border-b transition-colors z-30 ${
         darkMode
           ? "bg-neutral-900 border-neutral-800"
           : "bg-white border-[#E0E0E0]"
       }`}
     >
+      {/* Contest picker — every admin page uses this to know which contest it's editing */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => {
+            setShowContestMenu(!showContestMenu);
+            setShowNotifs(false);
+            setShowProfileMenu(false);
+          }}
+          className={`flex items-center gap-2.5 px-4 py-2 rounded-[10px] border transition-colors max-w-[280px] ${
+            darkMode
+              ? "border-neutral-800 hover:bg-neutral-800"
+              : "border-[#E0E0E0] hover:bg-[#F1F3F4]"
+          }`}
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+            <rect x="2" y="3" width="12" height="10" rx="2" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" />
+            <path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" strokeLinecap="round" />
+          </svg>
+
+          <span className={`text-[13px] font-semibold truncate font-['DM_Sans'] ${darkMode ? "text-white" : "text-[#1C1B1F]"}`}>
+            {selectedContest ? selectedContest.competition_name : "No contest selected"}
+          </span>
+
+          {selectedContest && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 font-['Roboto'] ${
+                selectedContest.status === "Active"
+                  ? darkMode ? "bg-emerald-950/50 text-emerald-400" : "bg-[#E8F5E9] text-[#2E7D32]"
+                  : selectedContest.status === "Frozen"
+                    ? darkMode ? "bg-blue-950/50 text-blue-400" : "bg-[#E8F0FE] text-[#1967D2]"
+                    : darkMode ? "bg-neutral-800 text-neutral-400" : "bg-[#F1F3F4] text-[#5F6368]"
+              }`}
+            >
+              {selectedContest.status}
+            </span>
+          )}
+
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="flex-shrink-0">
+            <path d="M2 3.5l3 3 3-3" stroke={darkMode ? "#A3A3A3" : "#9AA0A6"} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
+        {showContestMenu && (
+          <div
+            className={`absolute top-12 left-0 w-[280px] rounded-[12px] shadow-lg border overflow-hidden flex flex-col font-['Roboto'] z-20 ${
+              darkMode ? "bg-neutral-900 border-neutral-700" : "bg-white border-[#E0E0E0]"
+            }`}
+          >
+            <div className={`px-4 py-2.5 border-b text-[11px] font-bold uppercase tracking-wider ${darkMode ? "border-neutral-800 text-neutral-500" : "border-[#F1F3F4] text-[#9AA0A6]"}`}>
+              Live & Upcoming Contests
+            </div>
+
+            {competitions.length === 0 ? (
+              <div className={`px-4 py-4 text-[13px] ${darkMode ? "text-neutral-500" : "text-[#9AA0A6]"}`}>
+                No live or upcoming contests.
+              </div>
+            ) : (
+              competitions.map((c) => (
+                <button
+                  key={c.competition_id}
+                  onClick={() => {
+                    setSelectedContestId(c.competition_id);
+                    setShowContestMenu(false);
+                  }}
+                  className={`flex items-center justify-between gap-2 px-4 py-3 text-left text-[13px] font-medium transition-colors ${
+                    darkMode ? "hover:bg-neutral-800" : "hover:bg-[#F8F9FA]"
+                  } ${c.competition_id === selectedContestId ? (darkMode ? "bg-blue-950/30" : "bg-[#E8F0FE]") : ""}`}
+                >
+                  <span className={`truncate ${darkMode ? "text-neutral-200" : "text-[#1C1B1F]"}`}>{c.competition_name}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
+                      c.status === "Active"
+                        ? darkMode ? "bg-emerald-950/50 text-emerald-400" : "bg-[#E8F5E9] text-[#2E7D32]"
+                        : c.status === "Frozen"
+                          ? darkMode ? "bg-blue-950/50 text-blue-400" : "bg-[#E8F0FE] text-[#1967D2]"
+                          : darkMode ? "bg-neutral-800 text-neutral-400" : "bg-[#F1F3F4] text-[#5F6368]"
+                    }`}
+                  >
+                    {c.status}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center gap-4">
         {/* Competition timer */}
         {competitionStatus === "none" ? (
@@ -335,6 +387,7 @@ export default function AdminHeader({
             onClick={() => {
               setShowNotifs(!showNotifs);
               setShowProfileMenu(false);
+              setShowContestMenu(false);
             }}
             className={`relative w-8 h-8 rounded-[8px] flex items-center justify-center border transition-colors ${
               darkMode
@@ -543,6 +596,7 @@ export default function AdminHeader({
             onClick={() => {
               setShowProfileMenu(!showProfileMenu);
               setShowNotifs(false);
+              setShowContestMenu(false);
             }}
             className="flex items-center gap-2.5 cursor-pointer"
           >
