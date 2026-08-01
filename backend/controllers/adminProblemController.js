@@ -224,18 +224,35 @@ const updateProblem = async (req, res) => {
     }
 
     if (Array.isArray(test_cases)) {
-      await client.query(`DELETE FROM test_cases WHERE problem_id = $1`, [problemId]);
+      // Upsert instead of delete-then-reinsert: once a problem has contestant
+      // submissions, submission_test_results references test_cases with
+      // ON DELETE RESTRICT, so blindly deleting every row here would throw a
+      // foreign-key violation and roll back the whole update (including
+      // is_published and the is_hidden/visible sync).
+      const keptTestIds = [];
 
       for (let i = 0; i < test_cases.length; i++) {
         const tc = test_cases[i];
+        const testId = i + 1;
+        keptTestIds.push(testId);
+
         await client.query(
           `
             INSERT INTO test_cases (problem_id, test_id, input_data, expected_output, is_hidden)
             VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (problem_id, test_id) DO UPDATE SET
+              input_data = EXCLUDED.input_data,
+              expected_output = EXCLUDED.expected_output,
+              is_hidden = EXCLUDED.is_hidden
           `,
-          [problemId, i + 1, tc.input_data ?? "", tc.expected_output ?? "", !tc.visible]
+          [problemId, testId, tc.input_data ?? "", tc.expected_output ?? "", !tc.visible]
         );
       }
+
+      await client.query(
+        `DELETE FROM test_cases WHERE problem_id = $1 AND test_id != ALL($2::int[])`,
+        [problemId, keptTestIds]
+      );
     }
 
     await client.query("COMMIT");
@@ -247,6 +264,12 @@ const updateProblem = async (req, res) => {
     if (error.code === "23505") {
       return res.status(409).json({
         message: "A problem with this code or name already exists in the competition",
+      });
+    }
+
+    if (error.code === "23503") {
+      return res.status(409).json({
+        message: "Cannot remove a test case that already has contestant submissions against it.",
       });
     }
 
