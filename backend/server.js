@@ -72,6 +72,7 @@ app.get("/api/test-db", async (req, res) => {
 const problemRoutes = require("./routes/problemRoutes");
 const authRoutes = require("./routes/authRoutes");
 const homeRoutes = require("./routes/homeRoutes");
+const leaderbord = require("./routes/leaderbordRoutes.js");
 const submissionRoutes = require("./routes/submissionRoutes");
 const judgeRoutes = require("./routes/judgeRoutes");
 const userRoutes = require("./routes/teamRoutes");
@@ -87,6 +88,7 @@ const adminContestRoutes = require("./routes/adminContestRoutes");
 app.use("/api/problems", problemRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/home", homeRoutes);
+app.use("/api/leaderboard", leaderbord);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/judge", judgeRoutes);
 app.use("/api/users", userRoutes);

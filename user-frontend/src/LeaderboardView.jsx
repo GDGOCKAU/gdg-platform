@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import gdgLogoImg from "./assets/gdg-logo.png";
+import { useAuth } from "./context/AuthContext";
 
 
 
@@ -35,74 +36,6 @@ function GoogleBar() {
     </div>
   );
 }
-
-const teams = [
-  {
-    rank: 1,
-    name: "Code_Knights",
-    score: 450,
-    totalTime: "01:12:05",
-    problems: [
-      { state: "accepted", time: "+12 min" },
-      { state: "accepted", time: "+28 min" },
-      { state: "accepted", time: "+55 min" },
-      { state: "wrong", attempts: 1 },
-      { state: "unattempted" },
-    ],
-  },
-  {
-    rank: 2,
-    name: "Py_Masters",
-    score: 350,
-    totalTime: "01:45:22",
-    problems: [
-      { state: "accepted", time: "+09 min" },
-      { state: "accepted", time: "+41 min" },
-      { state: "wrong", attempts: 2 },
-      { state: "accepted", time: "+78 min" },
-      { state: "unattempted" },
-    ],
-  },
-  {
-    rank: 3,
-    name: "Null_Pointers",
-    score: 250,
-    totalTime: "02:01:10",
-    problems: [
-      { state: "accepted", time: "+15 min" },
-      { state: "accepted", time: "+67 min" },
-      { state: "wrong", attempts: 3 },
-      { state: "unattempted" },
-      { state: "unattempted" },
-    ],
-  },
-  {
-    rank: 4,
-    name: "Byte_Me",
-    score: 100,
-    totalTime: "02:30:44",
-    problems: [
-      { state: "accepted", time: "+22 min" },
-      { state: "wrong", attempts: 1 },
-      { state: "unattempted" },
-      { state: "unattempted" },
-      { state: "unattempted" },
-    ],
-  },
-  {
-    rank: 5,
-    name: "KAU_Hackers",
-    score: 100,
-    totalTime: "02:48:03",
-    problems: [
-      { state: "accepted", time: "+34 min" },
-      { state: "unattempted" },
-      { state: "unattempted" },
-      { state: "unattempted" },
-      { state: "unattempted" },
-    ],
-  },
-];
 
 function RankBadge({ rank, darkMode }) {
   if (rank === 1) {
@@ -169,20 +102,35 @@ function ProblemCell({ result, darkMode }) {
 
 export default function LeaderboardView({ darkMode, setDarkMode }) {
   const navigate = useNavigate();
-const [teams, setTeams] = useState([]);
+  const { user } = useAuth();
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/leaderboard")
-      .then((response) => {
-        setTeams(response.data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("خطأ في جلب البيانات:", error);
-        setLoading(false);
-      });
-  }, []);
+    if (!user?.competition_id) return;
+
+    const fetchLeaderboard = () => {
+      axios
+        .get(`http://localhost:5000/api/leaderboard/${user.competition_id}`, {
+          withCredentials: true,
+        })
+        .then((response) => {
+          setTeams(response.data);
+          setLastUpdated(new Date());
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error("خطأ في جلب البيانات:", error);
+          setLoading(false);
+        });
+    };
+
+    fetchLeaderboard();
+    const interval = setInterval(fetchLeaderboard, 30000);
+    return () => clearInterval(interval);
+  }, [user?.competition_id]);
+
   const bgStyle = darkMode ? "#121212" : "#F8F9FA";
   const navBg = darkMode ? "#1E1E1E" : "#FFFFFF";
   const cardBg = darkMode ? "#1E1E1E" : "#FFFFFF";
@@ -196,6 +144,25 @@ const [teams, setTeams] = useState([]);
     2: { bg: darkMode ? "#1E1E1E" : "#FAFAFA" },
     3: { bg: darkMode ? "#281D1A" : "#FFF3EF" },
   };
+
+  const problemCodes = teams[0]?.problems.map((p) => p.problem_code) ?? [];
+  const gridColumns = `56px 1fr 100px 110px ${problemCodes.map(() => "72px").join(" ")}`.trim();
+
+  const totalTeams = teams.length;
+  const currentLeader = teams[0] ?? null;
+
+  const mostSolved = (() => {
+    const counts = {};
+    teams.forEach((team) => {
+      team.problems.forEach((p) => {
+        if (p.state === "accepted") {
+          counts[p.problem_code] = (counts[p.problem_code] ?? 0) + 1;
+        }
+      });
+    });
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    return entries.length > 0 ? { code: entries[0][0], count: entries[0][1] } : null;
+  })();
 
   return (
     <div className="flex flex-col" style={{ width: "100%", height: "100%", backgroundColor: bgStyle, fontFamily: "'Roboto', sans-serif", overflow: "hidden" }}>
@@ -226,7 +193,7 @@ const [teams, setTeams] = useState([]);
               <rect x="5.5" y="3" width="2.5" height="10" rx="1" fill="#4285F4" />
               <rect x="10" y="1" width="2.5" height="12" rx="1" fill="#4285F4" />
             </svg>
-            <span className="text-[13px] font-semibold text-[#3A7CF5]" style={{ fontFamily: "'DM Sans', sans-serif" }}>48 teams competing</span>
+            <span className="text-[13px] font-semibold text-[#3A7CF5]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{totalTeams} team{totalTeams === 1 ? "" : "s"} competing</span>
           </div>
         </div>
 
@@ -243,8 +210,8 @@ const [teams, setTeams] = useState([]);
                 </svg>
               ),
               label: "Total Teams Active",
-              value: "48 Teams",
-              sub: "All checked in",
+              value: `${totalTeams} Team${totalTeams === 1 ? "" : "s"}`,
+              sub: "Currently competing",
               accent: "#4285F4",
               bg: darkMode ? "#1A2E4B" : "#E8F0FE",
             },
@@ -256,8 +223,8 @@ const [teams, setTeams] = useState([]);
                 </svg>
               ),
               label: "Most Solved Problem",
-              value: "Problem A",
-              sub: "42 teams solved",
+              value: mostSolved ? `Problem ${mostSolved.code}` : "—",
+              sub: mostSolved ? `${mostSolved.count} team${mostSolved.count === 1 ? "" : "s"} solved` : "No submissions yet",
               accent: "#34A853",
               bg: darkMode ? "#1B3320" : "#E8F5E9",
             },
@@ -268,8 +235,8 @@ const [teams, setTeams] = useState([]);
                 </svg>
               ),
               label: "Current Leader",
-              value: "Code_Knights",
-              sub: "450 pts · 3 solved",
+              value: currentLeader ? currentLeader.team_name : "—",
+              sub: currentLeader ? `${currentLeader.points} pts · ${currentLeader.solved_questions} solved` : "No teams yet",
               accent: "#E65100",
               bg: darkMode ? "#332200" : "#FFF8E1",
             },
@@ -296,8 +263,8 @@ const [teams, setTeams] = useState([]);
           className="rounded-[16px] overflow-hidden flex flex-col min-h-0"
           style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}` }}
         >
-          <div className="grid items-center px-6 py-3 border-b" style={{ gridTemplateColumns: "56px 1fr 100px 110px 72px 72px 72px 72px 72px", gap: "12px", backgroundColor: tableHeaderBg, borderColor }}>
-            {["Rank", "Team Name", "Score", "Total Time", "A", "B", "C", "D", "E"].map((h, i) => (
+          <div className="grid items-center px-6 py-3 border-b" style={{ gridTemplateColumns: gridColumns, gap: "12px", backgroundColor: tableHeaderBg, borderColor }}>
+            {["Rank", "Team Name", "Score", "Total Time", ...problemCodes].map((h, i) => (
               <div
                 key={h}
                 className="text-[11px] font-bold uppercase tracking-wider"
@@ -314,13 +281,13 @@ const [teams, setTeams] = useState([]);
           <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
             {teams.map((team, idx) => {
               const style = rowStyle[team.rank] ?? { bg: cardBg };
-              const isMyTeam = team.name === "Code_Knights";
+              const isMyTeam = team.team_id === user?.team_id;
               return (
                 <div
-                  key={team.rank}
+                  key={team.team_id}
                   className="grid items-center px-6 transition-colors duration-150"
                   style={{
-                    gridTemplateColumns: "56px 1fr 100px 110px 72px 72px 72px 72px 72px",
+                    gridTemplateColumns: gridColumns,
                     gap: "12px",
                     paddingTop: "14px",
                     paddingBottom: "14px",
@@ -332,23 +299,23 @@ const [teams, setTeams] = useState([]);
                   {isMyTeam && <div className="absolute left-0 top-0 bottom-0 w-1 rounded-r-[2px] bg-[#3A7CF5]" />}
                   <div className="flex justify-center"><RankBadge rank={team.rank} darkMode={darkMode} /></div>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0" style={{ backgroundColor: ["#4285F4", "#EA4335", "#34A853", "#FBBC04", "#9C27B0"][team.rank - 1], fontFamily: "'DM Sans', sans-serif" }}>
-                      {team.name.slice(0, 2).toUpperCase()}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0" style={{ backgroundColor: ["#4285F4", "#EA4335", "#34A853", "#FBBC04", "#9C27B0"][(team.rank - 1) % 5], fontFamily: "'DM Sans', sans-serif" }}>
+                      {team.team_name.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
                       <div className="text-[14px] font-semibold" style={{ color: textColor, fontFamily: "'DM Sans', sans-serif" }}>
-                        {team.name}
+                        {team.team_name}
                         {isMyTeam && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#3A7CF5] text-white" style={{ fontFamily: "'Roboto', sans-serif" }}>You</span>}
                       </div>
-                      <div className="text-[11px]" style={{ color: darkMode ? "#888888" : "#9AA0A6", fontFamily: "'Roboto', sans-serif" }}>{team.problems.filter(p => p.state === "accepted").length} solved</div>
+                      <div className="text-[11px]" style={{ color: darkMode ? "#888888" : "#9AA0A6", fontFamily: "'Roboto', sans-serif" }}>{team.solved_questions} solved</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[15px] font-bold" style={{ color: textColor, fontFamily: "'DM Sans', sans-serif" }}>{team.score}</div>
+                    <div className="text-[15px] font-bold" style={{ color: textColor, fontFamily: "'DM Sans', sans-serif" }}>{team.points}</div>
                     <div className="text-[11px]" style={{ color: darkMode ? "#888888" : "#9AA0A6", fontFamily: "'Roboto', sans-serif" }}>pts</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[13px] tabular-nums font-medium" style={{ color: darkMode ? "#CCCCCC" : "#3C4043", fontFamily: "'JetBrains Mono', monospace" }}>{team.totalTime}</div>
+                    <div className="text-[13px] tabular-nums font-medium" style={{ color: darkMode ? "#CCCCCC" : "#3C4043", fontFamily: "'JetBrains Mono', monospace" }}>{team.total_time}</div>
                   </div>
                   {team.problems.map((result, pi) => (
                     <div key={pi} className="flex justify-center"><ProblemCell result={result} darkMode={darkMode} /></div>
@@ -359,10 +326,12 @@ const [teams, setTeams] = useState([]);
           </div>
 
           <div className="px-6 py-3 flex items-center justify-between border-t flex-shrink-0" style={{ backgroundColor: tableHeaderBg, borderColor }}>
-            <span className="text-[12px]" style={{ color: darkMode ? "#888888" : "#9AA0A6", fontFamily: "'Roboto', sans-serif" }}>Showing top 5 of 48 teams</span>
+            <span className="text-[12px]" style={{ color: darkMode ? "#888888" : "#9AA0A6", fontFamily: "'Roboto', sans-serif" }}>Showing all {totalTeams} team{totalTeams === 1 ? "" : "s"}</span>
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-[#34A853] animate-pulse" />
-              <span className="text-[12px]" style={{ color: subTextColor, fontFamily: "'Roboto', sans-serif" }}>Last updated: just now</span>
+              <span className="text-[12px]" style={{ color: subTextColor, fontFamily: "'Roboto', sans-serif" }}>
+                Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : "—"}
+              </span>
             </div>
           </div>
         </div>

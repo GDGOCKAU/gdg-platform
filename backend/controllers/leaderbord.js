@@ -300,12 +300,48 @@ const storeLeaderboard = async (competitionId) => {
 
 };
 
+//formats a millisecond offset as "+NN min" for a single accepted problem
+const formatOffset = (ms) => {
+    const totalMinutes = Math.max(0, Math.floor(ms / 60000));
+    return `+${String(totalMinutes).padStart(2, "0")} min`;
+};
+
+//formats a millisecond duration as "HH:MM:SS" for the total time column
+const formatDuration = (ms) => {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
 //displays the leaderboard per competition
 const getLeaderboard = async (req,res) => {
 
     try {
 
         const {competitionId} = req.params;
+
+        const competitionResult = await pool.query(
+            `SELECT started_at FROM competitions WHERE competition_id = $1`,
+            [competitionId]
+        );
+
+        if (competitionResult.rows.length === 0) {
+            return res.status(404).json({
+                message: "Competition not found.",
+            });
+        }
+
+        const contestStartedAt = competitionResult.rows[0].started_at;
+
+        const problemsResult = await pool.query(
+            `SELECT problem_id, problem_code
+             FROM problems
+             WHERE competition_id = $1
+             ORDER BY problem_code`,
+            [competitionId]
+        );
 
         const leaderboardResult =
             await pool.query(
@@ -324,6 +360,8 @@ const getLeaderboard = async (req,res) => {
                             leaderboard.solved_questions DESC
 
                     ) AS rank,
+
+                    team.team_id,
 
                     team.team_name,
 
@@ -357,11 +395,72 @@ const getLeaderboard = async (req,res) => {
 
             );
 
-        return res.status(200).json(
+        const problemIds = problemsResult.rows.map((p) => p.problem_id);
 
-            leaderboardResult.rows
+        const submissionsResult = problemIds.length === 0
+            ? { rows: [] }
+            : await pool.query(
+                `
+                SELECT
+                    team_id,
+                    problem_id,
+                    MIN(submitted_at) FILTER (WHERE status = 'Accepted') AS accepted_at,
+                    COUNT(*) FILTER (WHERE status NOT IN ('Queued', 'Judging')) AS attempt_count
+                FROM submissions
+                WHERE problem_id = ANY($1::int[])
+                GROUP BY team_id, problem_id
+                `,
+                [problemIds]
+            );
 
-        );
+        const submissionsByTeam = new Map();
+        for (const row of submissionsResult.rows) {
+            if (!submissionsByTeam.has(row.team_id)) {
+                submissionsByTeam.set(row.team_id, new Map());
+            }
+            submissionsByTeam.get(row.team_id).set(row.problem_id, row);
+        }
+
+        const leaderboard = leaderboardResult.rows.map((team) => {
+            const teamSubmissions = submissionsByTeam.get(team.team_id);
+            let totalTimeMs = 0;
+
+            const problems = problemsResult.rows.map((problem) => {
+                const submission = teamSubmissions?.get(problem.problem_id);
+
+                if (!submission || submission.attempt_count === "0") {
+                    return { problem_code: problem.problem_code, state: "unattempted" };
+                }
+
+                if (submission.accepted_at) {
+                    const offsetMs = new Date(submission.accepted_at) - new Date(contestStartedAt);
+                    totalTimeMs += offsetMs;
+                    return {
+                        problem_code: problem.problem_code,
+                        state: "accepted",
+                        time: formatOffset(offsetMs),
+                    };
+                }
+
+                return {
+                    problem_code: problem.problem_code,
+                    state: "wrong",
+                    attempts: Number(submission.attempt_count),
+                };
+            });
+
+            return {
+                rank: Number(team.rank),
+                team_id: team.team_id,
+                team_name: team.team_name,
+                points: team.points,
+                solved_questions: team.solved_questions,
+                total_time: formatDuration(totalTimeMs),
+                problems,
+            };
+        });
+
+        return res.status(200).json(leaderboard);
 
     }
 
