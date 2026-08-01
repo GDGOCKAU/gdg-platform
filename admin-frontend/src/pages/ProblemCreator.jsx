@@ -1,5 +1,14 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
+import axios from "axios";
+
+// Config 
+
+// TODO: move baseURL to an environment variable (VITE_API_URL) before deploying to production.
+const api = axios.create({
+  baseURL: "http://localhost:5000/api/admin",
+  withCredentials: true,
+});
 
 // Form Sub-components 
 
@@ -55,26 +64,6 @@ function SelectInput({ value, onChange, options, darkMode }) {
   );
 }
 
-function TextAreaInput({ placeholder, value, onChange, rows = 5, monospace, darkMode }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <textarea
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      placeholder={placeholder}
-      rows={rows}
-      className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none transition-all duration-150 resize-none ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-white text-[#1C1B1F] placeholder-neutral-400'}`}
-      style={{
-        border: focused ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
-        fontFamily: monospace ? "'JetBrains Mono', monospace" : "'Roboto', sans-serif",
-        lineHeight: "1.7",
-      }}
-    />
-  );
-}
-
 // Rich text toolbar 
 
 function RichToolbar({ darkMode }) {
@@ -109,101 +98,35 @@ function RichToolbar({ darkMode }) {
   );
 }
 
-// Drag and drop upload 
-
-function FileUploadZone({ darkMode }) {
-  const [drag, setDrag] = useState(false);
-  const [files, setFiles] = useState([]);
-  const inputRef = useRef(null);
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDrag(false);
-    const dropped = Array.from(e.dataTransfer.files).map(f => f.name);
-    setFiles(prev => [...prev, ...dropped]);
-  };
-
-  const handleFiles = (e) => {
-    if (e.target.files) {
-      const picked = Array.from(e.target.files).map(f => f.name);
-      setFiles(prev => [...prev, ...picked]);
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div
-        onClick={() => inputRef.current?.click()}
-        onDragOver={e => { e.preventDefault(); setDrag(true); }}
-        onDragLeave={() => setDrag(false)}
-        onDrop={handleDrop}
-        className="flex flex-col items-center justify-center gap-3 rounded-[12px] py-8 px-6 transition-all duration-150 cursor-pointer"
-        style={{
-          border: `2px dashed ${drag ? "#3A7CF5" : (darkMode ? "#404040" : "#C4C7CC")}`,
-          backgroundColor: drag ? (darkMode ? "rgba(58,124,245,0.1)" : "#E8F0FE") : (darkMode ? "#171717" : "#FAFAFA"),
-        }}
-      >
-        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: drag ? (darkMode ? "rgba(58,124,245,0.2)" : "#D2E3FC") : (darkMode ? "#262626" : "#F1F3F4") }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M12 16V8M12 8L9 11M12 8L15 11" stroke={drag ? "#3A7CF5" : (darkMode ? "#A3A3A3" : "#9AA0A6")} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M8 20H6a4 4 0 0 1 0-8h.5A5.5 5.5 0 0 1 17.5 12H18a3 3 0 0 1 0 6h-2" stroke={drag ? "#3A7CF5" : (darkMode ? "#A3A3A3" : "#9AA0A6")} strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </div>
-        <div className="text-center">
-          <div className="text-[14px] font-semibold font-['DM_Sans']" style={{ color: drag ? "#3A7CF5" : (darkMode ? "#D4D4D4" : "#3C4043") }}>
-            {drag ? "Drop files here" : "Drag & drop test case files"}
-          </div>
-          <div className={`text-[12px] mt-0.5 font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
-            .zip or .txt · <span className="underline" style={{ color: "#3A7CF5" }}>Browse files</span>
-          </div>
-        </div>
-        <input ref={inputRef} type="file" accept=".zip,.txt" multiple className="hidden" onChange={handleFiles} />
-      </div>
-
-      {files.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {files.map((f, i) => (
-            <div key={i} className={`flex items-center gap-2.5 px-3 py-2 rounded-[8px] border ${darkMode ? 'bg-emerald-950/20 border-emerald-900/50' : 'bg-[#E8F5E9] border-[#A5D6A7]'}`}>
-              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                <path d="M3 1h6l3 3v9H3V1z" stroke="#34A853" strokeWidth="1.3" strokeLinejoin="round" />
-                <path d="M9 1v3h3" stroke="#34A853" strokeWidth="1.2" />
-              </svg>
-              <span className={`text-[12px] flex-1 truncate font-['JetBrains_Mono'] ${darkMode ? 'text-emerald-400' : 'text-[#2E7D32]'}`}>{f}</span>
-              <button onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="hover:opacity-70 transition-opacity">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M3 3l6 6M9 3l-6 6" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      <p className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
-        Include inputs and expected outputs for hidden grading. Files are validated against Judge0.
-      </p>
-    </div>
-  );
-}
-
 // Problem letter badge picker 
 
-function ProblemLetterPicker({ value, onChange, darkMode }) {
+function ProblemLetterPicker({ value, onChange, takenLetters, darkMode }) {
   return (
     <div className="flex gap-2">
-      {["A", "B", "C", "D", "E"].map(l => (
-        <button
-          key={l}
-          onClick={() => onChange(l)}
-          className={`w-9 h-9 rounded-[8px] flex items-center justify-center text-[14px] font-bold transition-all duration-150 font-['DM_Sans']`}
-          style={{
-            border: value === l ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
-            backgroundColor: value === l ? (darkMode ? "rgba(58,124,245,0.15)" : "#E8F0FE") : "transparent",
-            color: value === l ? "#3A7CF5" : (darkMode ? "#A3A3A3" : "#5F6368"),
-          }}
-        >
-          {l}
-        </button>
-      ))}
+      {["A", "B", "C", "D", "E"].map(l => {
+        const isTaken = takenLetters.includes(l);
+        return (
+          <button
+            key={l}
+            onClick={() => onChange(l)}
+            title={isTaken ? "A problem already exists for this letter — click to edit it" : "New problem"}
+            className={`relative w-9 h-9 rounded-[8px] flex items-center justify-center text-[14px] font-bold transition-all duration-150 font-['DM_Sans']`}
+            style={{
+              border: value === l ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
+              backgroundColor: value === l ? (darkMode ? "rgba(58,124,245,0.15)" : "#E8F0FE") : "transparent",
+              color: value === l ? "#3A7CF5" : (darkMode ? "#A3A3A3" : "#5F6368"),
+            }}
+          >
+            {l}
+            {isTaken && (
+              <span
+                className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
+                style={{ backgroundColor: "#34A853" }}
+              />
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -321,9 +244,7 @@ function TestCaseBlock({ tc, index, onChange, onRemove, darkMode }) {
 }
 
 // Preview Modal 
-// This component displays what the contestant will see
 function PreviewModal({ onClose, title, difficulty, points, timeLimit, memLimit, statement, testCases, darkMode }) {
-  // We only want to show test cases that the admin marked as "Visible"
   const visibleCases = testCases.filter(tc => tc.visible);
 
   return (
@@ -405,9 +326,19 @@ function PreviewModal({ onClose, title, difficulty, points, timeLimit, memLimit,
 
 // Main page 
 
+const BLANK_TEST_CASES = [{ id: 1, visible: true, input: "", output: "" }];
+
 export default function ProblemCreator() {
   const { darkMode } = useOutletContext() || {};
-  
+
+  // Competition selection
+  const [competitions, setCompetitions] = useState([]);
+  const [competitionId, setCompetitionId] = useState(null);
+  // All problems that already exist in the currently selected competition —
+  // used to know which letters are taken and to load a problem's data when picked.
+  const [competitionProblems, setCompetitionProblems] = useState([]);
+  const [loadingExisting, setLoadingExisting] = useState(false);
+
   const [title, setTitle] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");
   const [points, setPoints] = useState("250");
@@ -417,15 +348,118 @@ export default function ProblemCreator() {
   const [letter, setLetter] = useState("A");
   
   // States for buttons
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [published, setPublished] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
-  const [testCases, setTestCases] = useState([
-    { id: 1, visible: true,  input: "5 3\n1 2 3 4 5\n1 3\n2 5\n1 5", output: "6\n14\n15" },
-    { id: 2, visible: false, input: "4 2\n-1 3 -2 5\n1 4\n2 3",      output: "5\n1"     },
-  ]);
+  // Once the problem has been saved once (as draft or published), the backend
+  // gives us its problem_id. From then on we PATCH that same row instead of
+  // creating duplicate problems every time Save/Publish is pressed again.
+  const [currentProblemId, setCurrentProblemId] = useState(null);
+
+  const [testCases, setTestCases] = useState(BLANK_TEST_CASES);
   const nextId = Math.max(0, ...testCases.map(t => t.id)) + 1;
+
+  // 1) Load the list of competitions once, and default to the first one.
+  useEffect(() => {
+    let ignore = false;
+
+    const loadCompetitions = async () => {
+      try {
+        const response = await api.get("/competitions");
+        if (ignore) return;
+        setCompetitions(response.data.competitions);
+        if (response.data.competitions.length > 0) {
+          setCompetitionId(response.data.competitions[0].competition_id);
+        }
+      } catch (error) {
+        if (!ignore) console.error(error);
+      }
+    };
+
+    loadCompetitions();
+    return () => { ignore = true; };
+  }, []);
+
+  // 2) Whenever the selected competition changes, load that competition's
+  // problems (just the lightweight list — no test cases yet).
+  useEffect(() => {
+    if (!competitionId) return;
+    let ignore = false;
+
+    const loadProblems = async () => {
+      try {
+        const response = await api.get("/problems", { params: { competition_id: competitionId } });
+        if (!ignore) setCompetitionProblems(response.data.problems);
+      } catch (error) {
+        if (!ignore) console.error(error);
+      }
+    };
+
+    loadProblems();
+    return () => { ignore = true; };
+  }, [competitionId]);
+
+  // 3) Whenever the chosen letter (or the competition's problem list) changes,
+  // check if a problem already exists for that letter in this competition.
+  // If yes -> fetch its full details (including test cases) and fill the form.
+  // If no  -> reset the form to a blank state, ready to create a new one.
+  useEffect(() => {
+    const match = competitionProblems.find(p => p.problem_code === letter);
+    let ignore = false;
+
+    const loadOrReset = async () => {
+      if (!match) {
+        setCurrentProblemId(null);
+        setTitle("");
+        setDifficulty("Medium");
+        setPoints("250");
+        setTimeLimit("");
+        setMemLimit("");
+        setStatement("");
+        setTestCases(BLANK_TEST_CASES);
+        return;
+      }
+
+      setLoadingExisting(true);
+      try {
+        const response = await api.get(`/problems/${match.problem_id}`);
+        if (ignore) return;
+
+        const problem = response.data.problem;
+        const cases = response.data.test_cases;
+
+        setCurrentProblemId(problem.problem_id);
+        setTitle(problem.problem_name);
+        setDifficulty(problem.difficulty);
+        setPoints(String(problem.points_assigned));
+        setTimeLimit(String(problem.time_limit / 1000)); // ms -> seconds
+        setMemLimit(String(problem.memory_limit_mb));
+        setStatement(problem.description);
+        setTestCases(
+          cases.length > 0
+            ? cases.map(tc => ({
+                id: tc.test_id,
+                visible: !tc.is_hidden,
+                input: tc.input_data,
+                output: tc.expected_output,
+              }))
+            : BLANK_TEST_CASES
+        );
+      } catch (error) {
+        if (!ignore) console.error(error);
+      } finally {
+        if (!ignore) setLoadingExisting(false);
+      }
+    };
+
+    loadOrReset();
+    return () => { ignore = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [letter, competitionProblems]);
 
   const updateTC = (id, patch) =>
     setTestCases(prev => prev.map(t => (t.id === id ? { ...t, ...patch } : t)));
@@ -436,14 +470,76 @@ export default function ProblemCreator() {
   const addTC = () =>
     setTestCases(prev => [...prev, { id: nextId, visible: false, input: "", output: "" }]);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  // Builds the request body the backend's adminProblemController expects.
+  const buildPayload = (isPublished) => ({
+    problem_code: letter,
+    problem_name: title.trim(),
+    description: statement,
+    difficulty,
+    points_assigned: points,
+    time_limit: timeLimit,       // backend converts seconds -> milliseconds
+    memory_limit_mb: memLimit,   // backend defaults to 256 if empty
+    is_published: isPublished,
+    competition_id: competitionId,
+    test_cases: testCases.map(tc => ({
+      input_data: tc.input,
+      expected_output: tc.output,
+      visible: tc.visible,
+    })),
+  });
+
+  // Shared by both Save Draft and Publish — the only difference is is_published
+  // and which local "success" flag/timer gets triggered afterwards.
+  const persistProblem = async (isPublished) => {
+    if (!title.trim() || !statement.trim()) {
+      setSaveError("Problem Title and Problem Statement are required.");
+      return false;
+    }
+
+    setSaveError("");
+
+    try {
+      const payload = buildPayload(isPublished);
+
+      const response = currentProblemId
+        ? await api.patch(`/problems/${currentProblemId}`, payload)
+        : await api.post("/problems", payload);
+
+      const savedProblem = response.data.problem;
+      setCurrentProblemId(savedProblem.problem_id);
+
+      // Refresh the competition's problem list so the letter picker's
+      // "taken" dots stay accurate without needing a page reload.
+      const listResponse = await api.get("/problems", { params: { competition_id: competitionId } });
+      setCompetitionProblems(listResponse.data.problems);
+
+      return true;
+    } catch (error) {
+      setSaveError(error.response?.data?.message || "Unable to connect to the server.");
+      return false;
+    }
   };
 
-  const handlePublish = () => {
-    setPublished(true);
-    setTimeout(() => setPublished(false), 2500);
+  const handleSave = async () => {
+    setSaving(true);
+    const success = await persistProblem(false);
+    setSaving(false);
+
+    if (success) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  };
+
+  const handlePublish = async () => {
+    setPublishing(true);
+    const success = await persistProblem(true);
+    setPublishing(false);
+
+    if (success) {
+      setPublished(true);
+      setTimeout(() => setPublished(false), 2500);
+    }
   };
 
   const difficultyColors = {
@@ -452,6 +548,8 @@ export default function ProblemCreator() {
     Hard:   { bg: "#FFEBEE", text: "#B71C1C", darkBg: "rgba(234,67,53,0.15)", darkText: "#F87171" },
   };
   const dc = difficultyColors[difficulty] || difficultyColors["Medium"];
+
+  const takenLetters = competitionProblems.map(p => p.problem_code);
 
   return (
     <div className="flex flex-col gap-6">
@@ -486,6 +584,29 @@ export default function ProblemCreator() {
         </div>
       </div>
 
+      {/* Competition selector */}
+      <div className={`rounded-[16px] px-6 py-4 border shadow-sm flex items-center gap-4 ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
+        <span className={`text-[13px] font-bold font-['DM_Sans'] whitespace-nowrap ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>
+          Competition:
+        </span>
+        <div className="w-full max-w-[320px]">
+          <SelectInput
+            value={competitionId ?? ""}
+            onChange={val => setCompetitionId(Number(val))}
+            darkMode={darkMode}
+            options={competitions.map(c => ({
+              label: `${c.competition_name} (${c.status})`,
+              value: c.competition_id,
+            }))}
+          />
+        </div>
+        {loadingExisting && (
+          <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
+            Loading problem data...
+          </span>
+        )}
+      </div>
+
       {/* Main form card */}
       <div className={`rounded-[16px] overflow-hidden border shadow-sm ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
 
@@ -498,14 +619,18 @@ export default function ProblemCreator() {
                 <path d="M5 5h6M5 8h6M5 11h3" stroke="#3A7CF5" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
             </div>
-            <span className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>New Problem</span>
-            <span className={`text-[12px] px-2 py-0.5 rounded-full font-['Roboto'] ${darkMode ? 'bg-neutral-800 text-neutral-400' : 'bg-[#F1F3F4] text-[#9AA0A6]'}`}>Draft</span>
+            <span className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
+              {currentProblemId ? "Edit Problem" : "New Problem"}
+            </span>
+            <span className={`text-[12px] px-2 py-0.5 rounded-full font-['Roboto'] ${darkMode ? 'bg-neutral-800 text-neutral-400' : 'bg-[#F1F3F4] text-[#9AA0A6]'}`}>
+              {currentProblemId ? `#${currentProblemId} · Draft` : "Draft"}
+            </span>
           </div>
 
           {/* Problem letter picker */}
           <div className="flex items-center gap-3">
             <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#9AA0A6]'}`}>Problem Letter:</span>
-            <ProblemLetterPicker value={letter} onChange={setLetter} darkMode={darkMode} />
+            <ProblemLetterPicker value={letter} onChange={setLetter} takenLetters={takenLetters} darkMode={darkMode} />
           </div>
         </div>
 
@@ -548,6 +673,7 @@ export default function ProblemCreator() {
                   darkMode={darkMode}
                   options={[
                     { label: "100 pts", value: "100" },
+                    { label: "150 pts", value: "150" },
                     { label: "200 pts", value: "200" },
                     { label: "250 pts", value: "250" },
                     { label: "300 pts", value: "300" },
@@ -656,6 +782,9 @@ export default function ProblemCreator() {
           className={`flex items-center justify-between px-7 py-4 border-t ${darkMode ? 'border-neutral-800 bg-neutral-900/50' : 'border-[#F1F3F4] bg-[#FAFAFA]'}`}
         >
           <div className="flex items-center gap-2">
+            {saveError && (
+              <span className="text-[13px] text-[#EA4335] font-['Roboto']">{saveError}</span>
+            )}
             {saved && (
               <div className="flex items-center gap-1.5 text-[13px] text-[#34A853] font-['Roboto']">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -692,25 +821,27 @@ export default function ProblemCreator() {
             {/* Save draft */}
             <button
               onClick={handleSave}
-              className={`flex items-center gap-1.5 px-5 py-2.5 rounded-[8px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] ${darkMode ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' : 'bg-white border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
+              disabled={saving || publishing}
+              className={`flex items-center gap-1.5 px-5 py-2.5 rounded-[8px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] disabled:opacity-50 ${darkMode ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' : 'bg-white border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <rect x="2" y="1" width="10" height="12" rx="1.5" stroke={darkMode ? "#D4D4D4" : "#5F6368"} strokeWidth="1.3" />
                 <path d="M5 1v4h4V1" stroke={darkMode ? "#D4D4D4" : "#5F6368"} strokeWidth="1.3" strokeLinejoin="round" />
                 <path d="M4 8h6M4 10.5h4" stroke={darkMode ? "#D4D4D4" : "#5F6368"} strokeWidth="1.3" strokeLinecap="round" />
               </svg>
-              Save Draft
+              {saving ? "Saving..." : "Save Draft"}
             </button>
 
             {/* Publish */}
             <button
               onClick={handlePublish}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-[100px] text-[14px] font-semibold text-white bg-[#3A7CF5] hover:bg-[#2563EB] transition-all active:scale-[0.97] font-['DM_Sans'] shadow-[0_2px_8px_rgba(58,124,245,0.35)]"
+              disabled={saving || publishing}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-[100px] text-[14px] font-semibold text-white bg-[#3A7CF5] hover:bg-[#2563EB] transition-all active:scale-[0.97] font-['DM_Sans'] shadow-[0_2px_8px_rgba(58,124,245,0.35)] disabled:opacity-50"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M7 1l1.5 4H13l-3.5 2.5 1.5 4.5L7 9.5 3 12l1.5-4.5L1 5h4.5L7 1Z" fill="white" />
               </svg>
-              Publish Problem
+              {publishing ? "Publishing..." : "Publish Problem"}
             </button>
           </div>
         </div>
