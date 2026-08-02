@@ -9,5 +9,5 @@
 -- =========================================================
 INSERT INTO users (user_name, password, role, theme)
 VALUES
-    ('test',     '$2b$12$FY6j6N9GdY.NU.LtenKZvueTLzwwmXrb4IrZO1CeoRrYh/irAalm.', 'Admin', 'Dark'),
+    ('test',     '$2b$12$qrHjhQiph5yVcBcVs0.eieD6L11xcfIAq7UglMHRnVcEbTCqRlQyy', 'Admin', 'Dark'),
     ('gdgadmin', '$2b$12$FGhc.bvIpKMf.WgpMoriJe.ajJApoaIaS/QzZaazMu7lUQJfCpkES', 'Admin', 'Light');
