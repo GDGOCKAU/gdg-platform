@@ -7,6 +7,8 @@ const LAST_SEEN_ANNOUNCEMENT_KEY = "admin_last_seen_announcement_at";
 export default function AdminHeader({
   darkMode,
   setDarkMode,
+  admin,
+  adminLoading,
 }) {
   const {
     competitions,
@@ -24,13 +26,10 @@ export default function AdminHeader({
     localStorage.getItem(LAST_SEEN_ANNOUNCEMENT_KEY)
   );
 
-  const [themeLoading, setThemeLoading] = useState(true);
   const [themeUpdating, setThemeUpdating] = useState(false);
 
-  const [admin, setAdmin] = useState(null);
   const [competitionStatus, setCompetitionStatus] = useState("none"); // "none" | "before" | "live"
   const [remainingTime, setRemainingTime] = useState("00:00:00");
-  const [dataLoading, setDataLoading] = useState(true);
 
   // ─── Password Modal States ───
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -53,40 +52,6 @@ export default function AdminHeader({
     }
   }, [darkMode]);
   
-  useEffect(() => {
-    const fetchAdmin = async () => {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/admin/auth/me`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Failed to fetch admin"
-          );
-        }
-
-        setAdmin(data.user);
-
-        if (data.user?.theme) {
-          setDarkMode(data.user.theme === "Dark");
-        }
-      } catch (error) {
-        console.error("Fetch admin error:", error);
-      } finally {
-        setDataLoading(false);
-      }
-    };
-
-    fetchAdmin();
-  }, [setDarkMode]);
-
   useEffect(() => {
     if (!selectedContestId) {
       setAnnouncements([]);
@@ -156,36 +121,8 @@ export default function AdminHeader({
       .join("");
   };
 
-  useEffect(() => {
-    const fetchAdminTheme = async () => {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/admin/settings/theme`,
-          {
-            method: "GET",
-            credentials: "include",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch admin theme");
-        }
-
-        const data = await response.json();
-
-        setDarkMode(data.theme === "Dark");
-      } catch (error) {
-        console.error("Fetch admin theme error:", error);
-      } finally {
-        setThemeLoading(false);
-      }
-    };
-
-    fetchAdminTheme();
-  }, [setDarkMode]);
-
   const handleThemeToggle = async () => {
-    if (themeLoading || themeUpdating) return;
+    if (adminLoading || themeUpdating) return;
 
     const previousDarkMode = darkMode;
     const newDarkMode = !darkMode;
@@ -560,7 +497,7 @@ export default function AdminHeader({
         <button
           type="button"
           onClick={handleThemeToggle}
-          disabled={themeLoading || themeUpdating}
+          disabled={adminLoading || themeUpdating}
           aria-label="Toggle theme"
           className={`w-8 h-8 rounded-[8px] flex items-center justify-center border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
             darkMode
@@ -601,7 +538,7 @@ export default function AdminHeader({
                   darkMode ? "text-white" : "text-[#1C1B1F]"
                 }`}
               >
-               {dataLoading ? "Loading..." : admin?.user_name}
+               {adminLoading ? "Loading..." : admin?.user_name}
               </span>
 
               <span className="text-[10px] text-[#9AA0A6] font-['Roboto']">

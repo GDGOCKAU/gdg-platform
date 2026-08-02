@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import axios from "axios";
 import { useContest } from "../context/ContestContext";
 import { API_BASE_URL } from "../config";
+import LoadingDots from "../components/LoadingDots";
 
 // Config
 
@@ -101,10 +102,12 @@ function RichToolbar({ darkMode }) {
 
 // Problem letter badge picker 
 
+const PROBLEM_LETTERS = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+
 function ProblemLetterPicker({ value, onChange, takenLetters, darkMode }) {
   return (
-    <div className="flex gap-2">
-      {["A", "B", "C", "D", "E"].map(l => {
+    <div className="flex flex-wrap gap-2">
+      {PROBLEM_LETTERS.map(l => {
         const isTaken = takenLetters.includes(l);
         return (
           <button
@@ -382,6 +385,11 @@ export default function ProblemCreator() {
   const [published, setPublished] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteBlockedBySubmissions, setDeleteBlockedBySubmissions] = useState(false);
+  const [unpublishing, setUnpublishing] = useState(false);
 
   // Once the problem has been saved once (as draft or published), the backend
   // gives us its problem_id. From then on we PATCH that same row instead of
@@ -390,6 +398,11 @@ export default function ProblemCreator() {
 
   const [testCases, setTestCases] = useState(BLANK_TEST_CASES);
   const nextId = Math.max(0, ...testCases.map(t => t.id)) + 1;
+
+  // Snapshot of the form as it was right after loading/resetting for the
+  // current letter, so switching letters can warn before silently discarding
+  // an in-progress edit.
+  const formBaselineRef = useRef("");
 
   // Whenever the globally-selected competition changes, load that competition's
   // problems (just the lightweight list — no test cases yet).
@@ -423,17 +436,23 @@ export default function ProblemCreator() {
 
     const loadOrReset = async () => {
       if (!match) {
+        const blank = {
+          title: "", difficulty: "Medium", points: "250", timeLimit: "", memLimit: "",
+          statement: "", inputFormat: "", outputFormat: "", constraints: "",
+          testCases: BLANK_TEST_CASES,
+        };
         setCurrentProblemId(null);
-        setTitle("");
-        setDifficulty("Medium");
-        setPoints("250");
-        setTimeLimit("");
-        setMemLimit("");
-        setStatement("");
-        setInputFormat("");
-        setOutputFormat("");
-        setConstraints("");
-        setTestCases(BLANK_TEST_CASES);
+        setTitle(blank.title);
+        setDifficulty(blank.difficulty);
+        setPoints(blank.points);
+        setTimeLimit(blank.timeLimit);
+        setMemLimit(blank.memLimit);
+        setStatement(blank.statement);
+        setInputFormat(blank.inputFormat);
+        setOutputFormat(blank.outputFormat);
+        setConstraints(blank.constraints);
+        setTestCases(blank.testCases);
+        formBaselineRef.current = JSON.stringify(blank);
         return;
       }
 
@@ -444,27 +463,40 @@ export default function ProblemCreator() {
 
         const problem = response.data.problem;
         const cases = response.data.test_cases;
+        const loadedTestCases = cases.length > 0
+          ? cases.map(tc => ({
+              id: tc.test_id,
+              visible: !tc.is_hidden,
+              input: tc.input_data,
+              output: tc.expected_output,
+            }))
+          : BLANK_TEST_CASES;
+
+        const loaded = {
+          title: problem.problem_name,
+          difficulty: problem.difficulty,
+          points: String(problem.points_assigned),
+          timeLimit: String(problem.time_limit / 1000), // ms -> seconds
+          memLimit: String(problem.memory_limit_mb),
+          statement: problem.description,
+          inputFormat: problem.input_format || "",
+          outputFormat: problem.output_format || "",
+          constraints: problem.constraints || "",
+          testCases: loadedTestCases,
+        };
 
         setCurrentProblemId(problem.problem_id);
-        setTitle(problem.problem_name);
-        setDifficulty(problem.difficulty);
-        setPoints(String(problem.points_assigned));
-        setTimeLimit(String(problem.time_limit / 1000)); // ms -> seconds
-        setMemLimit(String(problem.memory_limit_mb));
-        setStatement(problem.description);
-        setInputFormat(problem.input_format || "");
-        setOutputFormat(problem.output_format || "");
-        setConstraints(problem.constraints || "");
-        setTestCases(
-          cases.length > 0
-            ? cases.map(tc => ({
-                id: tc.test_id,
-                visible: !tc.is_hidden,
-                input: tc.input_data,
-                output: tc.expected_output,
-              }))
-            : BLANK_TEST_CASES
-        );
+        setTitle(loaded.title);
+        setDifficulty(loaded.difficulty);
+        setPoints(loaded.points);
+        setTimeLimit(loaded.timeLimit);
+        setMemLimit(loaded.memLimit);
+        setStatement(loaded.statement);
+        setInputFormat(loaded.inputFormat);
+        setOutputFormat(loaded.outputFormat);
+        setConstraints(loaded.constraints);
+        setTestCases(loaded.testCases);
+        formBaselineRef.current = JSON.stringify(loaded);
       } catch (error) {
         if (!ignore) console.error(error);
       } finally {
@@ -527,6 +559,13 @@ export default function ProblemCreator() {
       const savedProblem = response.data.problem;
       setCurrentProblemId(savedProblem.problem_id);
 
+      // The form now matches what's saved — update the baseline so switching
+      // letters right after a save doesn't warn about "unsaved changes".
+      formBaselineRef.current = JSON.stringify({
+        title, difficulty, points, timeLimit, memLimit, statement,
+        inputFormat, outputFormat, constraints, testCases,
+      });
+
       // Refresh the competition's problem list so the letter picker's
       // "taken" dots stay accurate without needing a page reload.
       const listResponse = await api.get("/problems", { params: { competition_id: selectedContestId } });
@@ -559,6 +598,91 @@ export default function ProblemCreator() {
       setPublished(true);
       setTimeout(() => setPublished(false), 2500);
     }
+  };
+
+  const handleDeleteProblem = async () => {
+    if (!currentProblemId) return;
+
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      await api.delete(`/problems/${currentProblemId}`);
+
+      setShowDeleteConfirm(false);
+      setCurrentProblemId(null);
+      setTitle("");
+      setDifficulty("Medium");
+      setPoints("250");
+      setTimeLimit("");
+      setMemLimit("");
+      setStatement("");
+      setInputFormat("");
+      setOutputFormat("");
+      setConstraints("");
+      setTestCases(BLANK_TEST_CASES);
+      formBaselineRef.current = JSON.stringify({
+        title: "", difficulty: "Medium", points: "250", timeLimit: "", memLimit: "",
+        statement: "", inputFormat: "", outputFormat: "", constraints: "",
+        testCases: BLANK_TEST_CASES,
+      });
+
+      const listResponse = await api.get("/problems", { params: { competition_id: selectedContestId } });
+      setCompetitionProblems(listResponse.data.problems);
+    } catch (error) {
+      // Keep the confirmation modal open and show the error right there —
+      // closing it on failure made a blocked delete (e.g. the problem
+      // already has submissions) look like the button did nothing.
+      setDeleteError(error.response?.data?.message || "Unable to delete this problem.");
+      setDeleteBlockedBySubmissions(error.response?.status === 409);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // The database deliberately blocks deleting a problem that already has
+  // real team submissions against it (would permanently destroy their
+  // solves/points). Unpublishing is the safe alternative in that case: it
+  // hides the problem from contestants without touching any submission data.
+  const handleUnpublishProblem = async () => {
+    if (!currentProblemId) return;
+
+    setUnpublishing(true);
+    setDeleteError("");
+
+    try {
+      await api.patch(`/problems/${currentProblemId}`, { is_published: false });
+
+      setShowDeleteConfirm(false);
+
+      const listResponse = await api.get("/problems", { params: { competition_id: selectedContestId } });
+      setCompetitionProblems(listResponse.data.problems);
+    } catch (error) {
+      setDeleteError(error.response?.data?.message || "Unable to unpublish this problem.");
+    } finally {
+      setUnpublishing(false);
+    }
+  };
+
+  const isFormDirty = () => {
+    const current = JSON.stringify({
+      title, difficulty, points, timeLimit, memLimit, statement,
+      inputFormat, outputFormat, constraints, testCases,
+    });
+    return current !== formBaselineRef.current;
+  };
+
+  const handleLetterChange = (newLetter) => {
+    if (newLetter === letter) return;
+
+    if (isFormDirty()) {
+      const confirmed = window.confirm(
+        "You have unsaved changes to this problem. Switching letters will discard them. Continue?"
+      );
+      if (!confirmed) return;
+    }
+
+    setLetter(newLetter);
   };
 
   const difficultyColors = {
@@ -615,11 +739,7 @@ export default function ProblemCreator() {
       ) : (
       <>
 
-      {loadingExisting && (
-        <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
-          Loading problem data...
-        </span>
-      )}
+      {loadingExisting && <LoadingDots darkMode={darkMode} size={6} label="Loading problem data..." />}
 
       {/* Main form card */}
       <div className={`rounded-[16px] overflow-hidden border shadow-sm ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
@@ -644,7 +764,7 @@ export default function ProblemCreator() {
           {/* Problem letter picker */}
           <div className="flex items-center gap-3">
             <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#9AA0A6]'}`}>Problem Letter:</span>
-            <ProblemLetterPicker value={letter} onChange={setLetter} takenLetters={takenLetters} darkMode={darkMode} />
+            <ProblemLetterPicker value={letter} onChange={handleLetterChange} takenLetters={takenLetters} darkMode={darkMode} />
           </div>
         </div>
 
@@ -859,6 +979,19 @@ export default function ProblemCreator() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Delete Button */}
+            {currentProblemId && (
+              <button
+                onClick={() => { setDeleteError(""); setDeleteBlockedBySubmissions(false); setShowDeleteConfirm(true); }}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-[8px] text-[13px] font-medium transition-colors border font-['DM_Sans'] ${darkMode ? 'border-red-900/50 text-red-400 hover:bg-red-950/40' : 'border-[#FFCDD2] text-[#EA4335] hover:bg-[#FFEBEE]'}`}
+              >
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                  <path d="M2.5 4.5h9M5 4.5V3h4v1.5M5.5 6.5v4M8.5 6.5v4M3.5 4.5l.7 7h5.6l.7-7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Delete
+              </button>
+            )}
+
             {/* Preview Button */}
             <button
               onClick={() => setShowPreview(true)}
@@ -916,6 +1049,62 @@ export default function ProblemCreator() {
           testCases={testCases}
           darkMode={darkMode}
         />
+      )}
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "rgba(28,27,31,0.40)", backdropFilter: "blur(2px)" }}>
+          <div className={`rounded-[20px] p-8 flex flex-col gap-6 shadow-2xl ${darkMode ? 'bg-neutral-900 border border-neutral-800' : 'bg-white'}`} style={{ width: "400px" }}>
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(234,67,53,0.15)' : '#FFEBEE' }}>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                  <path d="M8 4h6M3 7h16M5 7l1 11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-11" stroke="#EA4335" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M9 11v5M13 11v5" stroke="#EA4335" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h3 className={`text-[18px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Delete Problem {letter}?</h3>
+              <p className={`text-[14px] leading-relaxed font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
+                <strong className={darkMode ? 'text-white' : 'text-[#1C1B1F]'}>{title || "This problem"}</strong> will be permanently removed. This cannot be undone.
+              </p>
+            </div>
+            {deleteError && (
+              <div className={`px-4 py-3 rounded-[8px] border text-[13px] font-['Roboto'] ${darkMode ? "bg-red-950/30 border-red-900/50 text-red-400" : "bg-[#FFEBEE] border-[#FFCDD2] text-[#C62828]"}`}>
+                {deleteError}
+                {deleteBlockedBySubmissions && (
+                  <p className="mt-1.5 opacity-90">
+                    You can unpublish it instead — that hides it from contestants without touching any of their submissions.
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setDeleteError(""); setDeleteBlockedBySubmissions(false); setShowDeleteConfirm(false); }}
+                disabled={deleting || unpublishing}
+                className={`flex-1 py-2.5 rounded-[10px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] disabled:opacity-60 ${darkMode ? 'border-neutral-700 text-neutral-300 hover:bg-neutral-800' : 'border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
+              >
+                Cancel
+              </button>
+              {deleteBlockedBySubmissions ? (
+                <button
+                  onClick={handleUnpublishProblem}
+                  disabled={unpublishing}
+                  className="flex-1 py-2.5 rounded-[10px] text-[14px] font-semibold text-white transition-all bg-[#3A7CF5] hover:bg-[#2563EB] font-['DM_Sans'] shadow-[0_2px_6px_rgba(58,124,245,0.30)] disabled:opacity-60"
+                >
+                  {unpublishing ? "Unpublishing..." : "Unpublish Instead"}
+                </button>
+              ) : (
+                <button
+                  onClick={handleDeleteProblem}
+                  disabled={deleting}
+                  className="flex-1 py-2.5 rounded-[10px] text-[14px] font-semibold text-white transition-all bg-[#EA4335] hover:bg-[#C62828] font-['DM_Sans'] shadow-[0_2px_6px_rgba(234,67,53,0.30)] disabled:opacity-60"
+                >
+                  {deleting ? "Deleting..." : "Yes, Delete"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
       </>
       )}

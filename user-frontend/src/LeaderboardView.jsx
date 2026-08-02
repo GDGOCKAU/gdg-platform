@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import gdgLogoImg from "./assets/gdg-logo.png";
 import { useAuth } from "./context/AuthContext";
 import { API_BASE_URL } from "./config";
+import LoadingScreen from "./components/LoadingScreen";
 
 
 
@@ -166,6 +167,10 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
     const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     return entries.length > 0 ? { code: entries[0][0], count: entries[0][1] } : null;
   })();
+
+  if (loading) {
+    return <LoadingScreen darkMode={darkMode} />;
+  }
 
   return (
     <div className="flex flex-col" style={{ width: "100%", height: "100%", backgroundColor: bgStyle, fontFamily: "'Roboto', sans-serif", overflow: "hidden" }}>

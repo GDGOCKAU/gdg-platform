@@ -7,6 +7,20 @@ const secondsToMs = (value) => {
   return Math.round(seconds * 1000);
 };
 
+// Posts a system announcement so contestants notice new/removed problems
+// without having to keep refreshing the problem list. Uses the same
+// `client` transaction as the problem write it's paired with, so the
+// announcement never appears without the change actually having committed.
+const postProblemAnnouncement = async (client, { competitionId, adminUserId, title, message }) => {
+  await client.query(
+    `
+      INSERT INTO announcements (competition_id, created_by, title, message, is_published)
+      VALUES ($1, $2, $3, $4, TRUE)
+    `,
+    [competitionId, adminUserId, title, message]
+  );
+};
+
 // GET /api/admin/problems?competition_id=1
 const getProblems = async (req, res) => {
   try {
@@ -91,6 +105,22 @@ const createProblem = async (req, res) => {
       return res.status(400).json({ message: "difficulty must be Easy, Medium or Hard" });
     }
 
+    let resolvedMemoryLimitMb = 256;
+    if (memory_limit_mb !== undefined && memory_limit_mb !== null && memory_limit_mb !== "") {
+      resolvedMemoryLimitMb = Number(memory_limit_mb);
+      if (!Number.isFinite(resolvedMemoryLimitMb) || resolvedMemoryLimitMb <= 0) {
+        return res.status(400).json({ message: "memory_limit_mb must be a positive number" });
+      }
+    }
+
+    let resolvedPointsAssigned = 0;
+    if (points_assigned !== undefined && points_assigned !== null && points_assigned !== "") {
+      resolvedPointsAssigned = Number(points_assigned);
+      if (!Number.isFinite(resolvedPointsAssigned) || resolvedPointsAssigned < 0) {
+        return res.status(400).json({ message: "points_assigned must be a non-negative number" });
+      }
+    }
+
     let resolvedCompetitionId = competition_id ? Number(competition_id) : null;
 
     if (!resolvedCompetitionId) {
@@ -125,13 +155,13 @@ const createProblem = async (req, res) => {
         description,
         input_format?.trim() || "",
         output_format?.trim() || "",
-        memory_limit_mb ? Number(memory_limit_mb) : 256,
+        resolvedMemoryLimitMb,
         resolvedCompetitionId,
         difficulty,
         secondsToMs(time_limit),
         constraints?.trim() || null,
         "Any",
-        points_assigned ? Number(points_assigned) : 0,
+        resolvedPointsAssigned,
         Boolean(is_published),
       ]
     );
@@ -148,6 +178,15 @@ const createProblem = async (req, res) => {
         `,
         [problem.problem_id, i + 1, tc.input_data ?? "", tc.expected_output ?? "", !tc.visible]
       );
+    }
+
+    if (problem.is_published) {
+      await postProblemAnnouncement(client, {
+        competitionId: resolvedCompetitionId,
+        adminUserId: req.user.user_id,
+        title: `New Problem Published: ${problem.problem_code}`,
+        message: `${problem.problem_name} is now available to solve! Difficulty: ${problem.difficulty}, Points: ${problem.points_assigned}.`,
+      });
     }
 
     await client.query("COMMIT");
@@ -194,7 +233,35 @@ const updateProblem = async (req, res) => {
       test_cases,
     } = req.body;
 
+    let resolvedMemoryLimitMb;
+    if (memory_limit_mb !== undefined) {
+      resolvedMemoryLimitMb = Number(memory_limit_mb);
+      if (!Number.isFinite(resolvedMemoryLimitMb) || resolvedMemoryLimitMb <= 0) {
+        return res.status(400).json({ message: "memory_limit_mb must be a positive number" });
+      }
+    }
+
+    let resolvedPointsAssigned;
+    if (points_assigned !== undefined) {
+      resolvedPointsAssigned = Number(points_assigned);
+      if (!Number.isFinite(resolvedPointsAssigned) || resolvedPointsAssigned < 0) {
+        return res.status(400).json({ message: "points_assigned must be a non-negative number" });
+      }
+    }
+
     await client.query("BEGIN");
+
+    const existingResult = await client.query(
+      `SELECT is_published, competition_id FROM problems WHERE problem_id = $1 FOR UPDATE`,
+      [problemId]
+    );
+
+    if (existingResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "Problem not found" });
+    }
+
+    const wasPublished = existingResult.rows[0].is_published;
 
     const updateResult = await client.query(
       `
@@ -222,9 +289,9 @@ const updateProblem = async (req, res) => {
         output_format !== undefined ? output_format.trim() : null,
         constraints !== undefined ? constraints.trim() : null,
         difficulty ?? null,
-        points_assigned !== undefined ? Number(points_assigned) : null,
+        resolvedPointsAssigned !== undefined ? resolvedPointsAssigned : null,
         time_limit !== undefined ? secondsToMs(time_limit) : null,
-        memory_limit_mb !== undefined ? Number(memory_limit_mb) : null,
+        resolvedMemoryLimitMb !== undefined ? resolvedMemoryLimitMb : null,
         is_published !== undefined ? Boolean(is_published) : null,
         problemId,
       ]
@@ -267,9 +334,22 @@ const updateProblem = async (req, res) => {
       );
     }
 
+    const updatedProblem = updateResult.rows[0];
+
+    // Only announce the false -> true transition, not every edit to an
+    // already-published problem.
+    if (!wasPublished && updatedProblem.is_published) {
+      await postProblemAnnouncement(client, {
+        competitionId: updatedProblem.competition_id,
+        adminUserId: req.user.user_id,
+        title: `New Problem Published: ${updatedProblem.problem_code}`,
+        message: `${updatedProblem.problem_name} is now available to solve! Difficulty: ${updatedProblem.difficulty}, Points: ${updatedProblem.points_assigned}.`,
+      });
+    }
+
     await client.query("COMMIT");
 
-    return res.status(200).json({ problem: updateResult.rows[0] });
+    return res.status(200).json({ problem: updatedProblem });
   } catch (error) {
     await client.query("ROLLBACK");
 
@@ -294,23 +374,48 @@ const updateProblem = async (req, res) => {
 
 // DELETE /api/admin/problems/:id
 const deleteProblem = async (req, res) => {
+  const client = await pool.connect();
+
   try {
     const problemId = Number(req.params.id);
     if (!problemId) {
       return res.status(400).json({ message: "Invalid problem id" });
     }
 
-    const result = await pool.query(
-      `DELETE FROM problems WHERE problem_id = $1 RETURNING problem_id`,
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `
+        DELETE FROM problems
+        WHERE problem_id = $1
+        RETURNING problem_id, problem_code, problem_name, competition_id, is_published
+      `,
       [problemId]
     );
 
     if (result.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ message: "Problem not found" });
     }
 
+    const deletedProblem = result.rows[0];
+
+    // Only announce the removal of a problem contestants could actually see.
+    if (deletedProblem.is_published) {
+      await postProblemAnnouncement(client, {
+        competitionId: deletedProblem.competition_id,
+        adminUserId: req.user.user_id,
+        title: `Problem Removed: ${deletedProblem.problem_code}`,
+        message: `${deletedProblem.problem_name} has been removed from the contest.`,
+      });
+    }
+
+    await client.query("COMMIT");
+
     return res.status(200).json({ message: "Problem deleted successfully" });
   } catch (error) {
+    await client.query("ROLLBACK");
+
     if (error.code === "23503") {
       return res.status(409).json({
         message: "Cannot delete: this problem already has submissions linked to it",
@@ -318,6 +423,8 @@ const deleteProblem = async (req, res) => {
     }
     console.error("Delete problem error:", error);
     return res.status(500).json({ message: "Internal server error" });
+  } finally {
+    client.release();
   }
 };
 

@@ -119,7 +119,60 @@ const getAdminOverview = async (req, res) => {
 
     const recentSubmissions = recentSubmissionsResult.rows;
 
+    // Real trend lines for the stat-card sparklines: bucket the contest's
+    // elapsed time (start -> now, capped at the contest end) into 7 equal
+    // windows and tally submissions per window. Before the contest starts,
+    // or with no elapsed time yet, there's nothing to bucket.
+    const TREND_BUCKETS = 7;
+    const trends = {
+      submissions: new Array(TREND_BUCKETS).fill(0),
+      active_teams: new Array(TREND_BUCKETS).fill(0),
+      success_rate: new Array(TREND_BUCKETS).fill(0),
+    };
 
+    const contestStart = new Date(competition.started_at).getTime();
+    const contestEnd = Math.min(Date.now(), new Date(competition.ended_at).getTime());
+
+    if (contestEnd > contestStart) {
+      const trendRowsResult = await pool.query(
+        `
+          SELECT s.submitted_at, s.status, s.team_id
+          FROM submissions s
+          INNER JOIN teams t
+            ON t.team_id = s.team_id
+          WHERE t.competition_id = $1
+            AND s.submitted_at >= $2
+            AND s.submitted_at <= $3
+        `,
+        [competitionId, new Date(contestStart), new Date(contestEnd)]
+      );
+
+      const bucketMs = (contestEnd - contestStart) / TREND_BUCKETS;
+      const buckets = Array.from({ length: TREND_BUCKETS }, () => ({
+        total: 0,
+        accepted: 0,
+        teams: new Set(),
+      }));
+
+      for (const row of trendRowsResult.rows) {
+        const submittedAtMs = new Date(row.submitted_at).getTime();
+        const index = Math.min(
+          Math.max(Math.floor((submittedAtMs - contestStart) / bucketMs), 0),
+          TREND_BUCKETS - 1
+        );
+
+        buckets[index].total += 1;
+        if (row.status === "Accepted") buckets[index].accepted += 1;
+        buckets[index].teams.add(row.team_id);
+      }
+
+      buckets.forEach((bucket, index) => {
+        trends.submissions[index] = bucket.total;
+        trends.active_teams[index] = bucket.teams.size;
+        trends.success_rate[index] =
+          bucket.total > 0 ? Number(((bucket.accepted / bucket.total) * 100).toFixed(1)) : 0;
+      });
+    }
 
     return res.status(200).json({
       competition,
@@ -132,6 +185,7 @@ const getAdminOverview = async (req, res) => {
         submissions_last_five_minutes:
           submissionsLastFiveMinutes,
       },
+      trends,
       recent_submissions: recentSubmissions,
     });
   } catch (error) {
@@ -140,6 +194,96 @@ const getAdminOverview = async (req, res) => {
     return res.status(500).json({
       message: "Internal server error",
     });
+  }
+};
+
+const ERROR_STATUSES = [
+  "Wrong Answer",
+  "Time Limit Exceeded",
+  "Compilation Error",
+  "Runtime Error",
+  "Internal Error",
+];
+
+// GET /api/admin/overview/submissions-feed
+// Searchable/paginated submissions list — separate from the capped 50-row
+// "recent submissions" snapshot on the main overview, so the "View all"
+// modal can actually reach submission #51+ and look up a specific team.
+const getSubmissionsFeed = async (req, res) => {
+  try {
+    const competitionId = Number(req.query.competition_id);
+
+    if (!competitionId) {
+      return res.status(400).json({ message: "competition_id is required" });
+    }
+
+    const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const statusFilter = req.query.status_filter === "accepted" || req.query.status_filter === "errors"
+      ? req.query.status_filter
+      : "all";
+
+    const limit = Math.min(Math.max(Number(req.query.limit) || 25, 1), 100);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+
+    const conditions = ["t.competition_id = $1", "p.competition_id = $1"];
+    const values = [competitionId];
+
+    if (search) {
+      values.push(`%${search}%`);
+      conditions.push(`t.team_name ILIKE $${values.length}`);
+    }
+
+    if (statusFilter === "accepted") {
+      conditions.push(`s.status = 'Accepted'`);
+    } else if (statusFilter === "errors") {
+      values.push(ERROR_STATUSES);
+      conditions.push(`s.status = ANY($${values.length}::text[])`);
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    const countResult = await pool.query(
+      `
+        SELECT COUNT(*)::int AS total
+        FROM submissions s
+        INNER JOIN teams t ON t.team_id = s.team_id
+        INNER JOIN problems p ON p.problem_id = s.problem_id
+        WHERE ${whereClause}
+      `,
+      values
+    );
+
+    const rowsResult = await pool.query(
+      `
+        SELECT
+          s.submission_id,
+          s.submitted_at,
+          s.status,
+          s.language_name,
+          t.team_id,
+          t.team_name,
+          p.problem_id,
+          p.problem_code,
+          p.problem_name
+        FROM submissions s
+        INNER JOIN teams t ON t.team_id = s.team_id
+        INNER JOIN problems p ON p.problem_id = s.problem_id
+        WHERE ${whereClause}
+        ORDER BY s.submitted_at DESC
+        LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+      `,
+      [...values, limit, offset]
+    );
+
+    return res.status(200).json({
+      submissions: rowsResult.rows,
+      total: countResult.rows[0].total,
+      limit,
+      offset,
+    });
+  } catch (error) {
+    console.error("Get submissions feed error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -385,5 +529,5 @@ const getAvailableCompetitions = async (req, res) => {
 };
 
 module.exports = {
-  getAdminOverview, createAnnouncement, getAnnouncements, updateAnnouncement, deleteAnnouncement, getAvailableCompetitions,
+  getAdminOverview, getSubmissionsFeed, createAnnouncement, getAnnouncements, updateAnnouncement, deleteAnnouncement, getAvailableCompetitions,
 };

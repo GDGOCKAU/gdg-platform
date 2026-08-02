@@ -1,6 +1,19 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import gdgLogo from '../assets/gdg-logo.png';
+import { useContest } from '../context/ContestContext';
+
+const getInitials = (name) => {
+  if (!name) return "--";
+
+  return name
+    .trim()
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+};
 
 const NAV_ITEMS = [
   {
@@ -49,7 +62,42 @@ const NAV_ITEMS = [
   },
 ];
 
-export default function AdminSidebar({ darkMode }) {
+export default function AdminSidebar({ darkMode, admin, adminLoading }) {
+  const { selectedContest } = useContest();
+
+  const contestStatus = (() => {
+    if (!selectedContest) return { label: "No active contest", dotClass: "bg-neutral-400", pillClass: "" };
+
+    if (selectedContest.status === "Active") {
+      return {
+        label: "Contest Live",
+        dotClass: "bg-[#34A853] animate-live-pulse",
+        pillClass: darkMode ? "bg-emerald-950/40 border-emerald-800/50" : "bg-[#E8F5E9] border-[#A5D6A7]",
+        textClass: darkMode ? "text-emerald-400" : "text-[#2E7D32]",
+      };
+    }
+
+    if (selectedContest.status === "Frozen") {
+      return {
+        label: "Scoreboard Frozen",
+        dotClass: "bg-[#4285F4]",
+        pillClass: darkMode ? "bg-blue-950/30 border-blue-800/40" : "bg-[#E8F0FE] border-[#90CAF9]",
+        textClass: darkMode ? "text-blue-400" : "text-[#1967D2]",
+      };
+    }
+
+    if (selectedContest.status === "Upcoming") {
+      return {
+        label: "Contest Upcoming",
+        dotClass: "bg-[#FBBC04]",
+        pillClass: darkMode ? "bg-orange-950/20 border-orange-900/50" : "bg-[#FFF8E1] border-[#FFE082]",
+        textClass: darkMode ? "text-orange-300" : "text-[#E65100]",
+      };
+    }
+
+    return { label: "No active contest", dotClass: "bg-neutral-400", pillClass: "" };
+  })();
+
   return (
     <aside className={`w-[20%] min-w-[240px] flex flex-col flex-shrink-0 h-full border-r transition-colors ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-[#E0E0E0]'}`}>
       {/* Sidebar header */}
@@ -77,11 +125,13 @@ export default function AdminSidebar({ darkMode }) {
 
       {/* Contest status pill */}
       <div className="px-5 pt-4 flex-shrink-0">
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-[10px] border ${darkMode ? 'bg-emerald-950/40 border-emerald-800/50' : 'bg-[#E8F5E9] border-[#A5D6A7]'}`}>
-          <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#34A853] animate-live-pulse" />
-          <div className="flex flex-col">
-            <span className={`text-[11px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-emerald-400' : 'text-[#2E7D32]'}`}>Contest Live</span>
-            <span className={`text-[10px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>GDG KAU × ICPC 2025</span>
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-[10px] border ${contestStatus.pillClass || (darkMode ? 'bg-neutral-800/60 border-neutral-700' : 'bg-[#F1F3F4] border-[#E0E0E0]')}`}>
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${contestStatus.dotClass}`} />
+          <div className="flex flex-col min-w-0">
+            <span className={`text-[11px] font-semibold font-['DM_Sans'] truncate ${contestStatus.textClass || (darkMode ? 'text-neutral-400' : 'text-[#5F6368]')}`}>{contestStatus.label}</span>
+            <span className={`text-[10px] font-['Roboto'] truncate ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
+              {selectedContest ? selectedContest.competition_name : "GDG KAU × ICPC"}
+            </span>
           </div>
         </div>
       </div>
@@ -123,11 +173,13 @@ export default function AdminSidebar({ darkMode }) {
       <div className={`px-5 py-4 flex-shrink-0 border-t ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold bg-[#3A7CF5] font-['DM_Sans'] flex-shrink-0">
-            AD
+            {getInitials(admin?.user_name)}
           </div>
           <div className="flex-1 min-w-0">
-            <div className={`text-[13px] font-semibold truncate font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Admin User</div>
-            <div className="text-[11px] text-[#9AA0A6] truncate font-['Roboto']">admin@gdgkau.com</div>
+            <div className={`text-[13px] font-semibold truncate font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>
+              {adminLoading ? "Loading..." : admin?.user_name || "Admin"}
+            </div>
+            <div className="text-[11px] text-[#9AA0A6] truncate font-['Roboto']">{admin?.role || "Admin"}</div>
           </div>
         </div>
       </div>

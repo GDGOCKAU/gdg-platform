@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import axios from "axios";
 import { useContest } from "../context/ContestContext";
 import { API_BASE_URL } from "../config";
+import LoadingDots from "../components/LoadingDots";
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/admin`,
@@ -73,20 +74,19 @@ function DeleteModal({ team, onConfirm, onCancel, darkMode }) {
 function AddTeamModal({ onClose, onAdd, darkMode }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
-  const [members, setMembers] = useState(3);
   const [nameFocus, setNameFocus] = useState(false);
   const [codeFocus, setCodeFocus] = useState(false);
   const [shake, setShake] = useState(false);
 
 
-  //add team 
+  //add team
   const handleSubmit = () => {
     if (!name.trim() || !code.trim()) {
       setShake(true);
       setTimeout(() => setShake(false), 400);
       return;
     }
-    onAdd(name.trim(), code.trim(), members);
+    onAdd(name.trim(), code.trim());
     onClose();
   };
 
@@ -157,29 +157,6 @@ function AddTeamModal({ onClose, onAdd, darkMode }) {
               </button>
             </div>
             <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Share this code with the team to allow them to log in.</span>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className={`text-[13px] font-medium font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>Number of Members</label>
-            <div className="flex items-center gap-3">
-              {[1, 2, 3].map(n => (
-                <button
-                  key={n}
-                  onClick={() => setMembers(n)}
-                  className={`flex-1 py-2.5 rounded-[8px] text-[14px] font-semibold transition-all duration-150 font-['DM_Sans']`}
-                  style={{
-                    border: members === n ? "2px solid #3A7CF5" : `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}`,
-                    backgroundColor: members === n ? (darkMode ? 'rgba(58,124,245,0.15)' : '#E8F0FE') : 'transparent',
-                    color: members === n ? "#3A7CF5" : (darkMode ? "#A3A3A3" : "#5F6368"),
-                  }}
-                >
-                  {n} {n === 1 ? "Member" : "Members"}
-                </button>
-              ))}
-            </div>
-            <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
-              Note: not sent to the backend yet — the teams table has no members column.
-            </span>
           </div>
         </div>
 
@@ -321,6 +298,8 @@ export default function TeamManagement() {
   const { selectedContestId } = useContest();
 
   const [teams, setTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -330,13 +309,19 @@ export default function TeamManagement() {
   const fetchTeams = async () => {
     if (!selectedContestId) {
       setTeams([]);
+      setLoading(false);
       return;
     }
     try {
+      setLoading(true);
+      setError("");
       const response = await api.get("/teams", { params: { competition_id: selectedContestId } });
       setTeams(response.data.teams);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Failed to load teams.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -352,6 +337,7 @@ export default function TeamManagement() {
 
   const handleAdd = async (name, code) => {
       try {
+          setError("");
 
           await api.post("/teams", {
               team_name: name,
@@ -361,14 +347,16 @@ export default function TeamManagement() {
 
           fetchTeams();
 
-      } catch (error) {
-          console.error(error);
+      } catch (err) {
+          console.error(err);
+          setError(err.response?.data?.message || "Failed to add this team.");
       }
   };
 
   const handleEdit = async (name, code) => {
       if (!editTarget) return;
       try {
+          setError("");
 
           await api.patch(`/teams/${editTarget.id}`, {
               team_name: name,
@@ -377,8 +365,9 @@ export default function TeamManagement() {
 
           fetchTeams();
 
-      } catch (error) {
-          console.error(error);
+      } catch (err) {
+          console.error(err);
+          setError(err.response?.data?.message || "Failed to save changes to this team.");
       }
   };
 
@@ -387,6 +376,7 @@ export default function TeamManagement() {
       if (!deleteTarget) return;
 
       try {
+          setError("");
 
           await api.delete(
               `/teams/${deleteTarget.id}`
@@ -396,9 +386,11 @@ export default function TeamManagement() {
 
           setDeleteTarget(null);
 
-      } catch (error) {
+      } catch (err) {
 
-          console.error(error);
+          console.error(err);
+          setError(err.response?.data?.message || "Failed to remove this team.");
+          setDeleteTarget(null);
 
       }
 
@@ -429,6 +421,18 @@ export default function TeamManagement() {
 
   return (
     <div className="flex flex-col gap-6">
+
+      {error && (
+        <div
+          className={`px-4 py-3 rounded-[10px] border text-[13px] font-['Roboto'] ${
+            darkMode
+              ? "bg-red-950/30 border-red-900/50 text-red-400"
+              : "bg-[#FFEBEE] border-[#FFCDD2] text-[#C62828]"
+          }`}
+        >
+          {error}
+        </div>
+      )}
 
       {/* Page title + action bar */}
       <div className="flex items-end justify-between">
@@ -496,13 +500,17 @@ export default function TeamManagement() {
         </div>
 
         {/* Rows */}
-        {filtered.length === 0 ? (
+        {loading ? (
+          <LoadingDots darkMode={darkMode} label="Loading teams..." />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
               <circle cx="18" cy="18" r="13" stroke={darkMode ? "#404040" : "#E0E0E0"} strokeWidth="2" />
               <path d="M28 28L36 36" stroke={darkMode ? "#404040" : "#E0E0E0"} strokeWidth="2.5" strokeLinecap="round" />
             </svg>
-            <span className={`text-[14px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>No teams match your search.</span>
+            <span className={`text-[14px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
+              {teams.length === 0 ? "No teams registered yet." : "No teams match your search."}
+            </span>
           </div>
         ) : (
           filtered.map((team, idx) => {

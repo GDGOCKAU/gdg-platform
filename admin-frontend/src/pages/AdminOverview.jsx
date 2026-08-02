@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from 'react-router-dom';
 import { useContest } from '../context/ContestContext';
 import { API_BASE_URL } from '../config';
+import LoadingDots from '../components/LoadingDots';
 
 // Constants & Status Badges 
 
@@ -414,9 +415,7 @@ function AnnouncementHistoryModal({ onClose, darkMode, competitionId, competitio
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-7 py-5 flex flex-col gap-4">
-          {loading && (
-            <p className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>Loading announcements...</p>
-          )}
+          {loading && <LoadingDots darkMode={darkMode} label="Loading announcements..." />}
 
           {!loading && error && (
             <div className={`px-4 py-3 rounded-[10px] border text-[13px] font-['Roboto'] ${darkMode ? "bg-red-950/30 border-red-900/50 text-red-400" : "bg-[#FFEBEE] border-[#FFCDD2] text-[#C62828]"}`}>
@@ -446,7 +445,76 @@ function AnnouncementHistoryModal({ onClose, darkMode, competitionId, competitio
   );
 }
 
-function ViewAllModal({ onClose, darkMode, submissions }) {
+function ViewAllModal({ onClose, darkMode, competitionId }) {
+  const PAGE_SIZE = 25;
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // "all" | "accepted" | "errors"
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+    setLoading(true);
+    setError("");
+
+    const params = new URLSearchParams({
+      competition_id: competitionId,
+      status_filter: statusFilter,
+      limit: String(PAGE_SIZE),
+      offset: String(offset),
+    });
+    if (search.trim()) params.set("search", search.trim());
+
+    fetch(`${API_BASE_URL}/api/admin/overview/submissions-feed?${params.toString()}`, {
+      method: "GET",
+      credentials: "include",
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || "Failed to load submissions");
+        if (!ignore) {
+          setRows(data.submissions || []);
+          setTotal(data.total || 0);
+        }
+      })
+      .catch((err) => {
+        if (!ignore) setError(err.message);
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => { ignore = true; };
+  }, [competitionId, search, statusFilter, offset]);
+
+  const updateSearch = (value) => {
+    setSearch(value);
+    setOffset(0);
+  };
+
+  const updateStatusFilter = (value) => {
+    setStatusFilter(value);
+    setOffset(0);
+  };
+
+  const formatted = rows.map((s) => ({
+    id: s.submission_id,
+    time: new Date(s.submitted_at).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    team: s.team_name,
+    problem: s.problem_code || "—",
+    problemFull: s.problem_name,
+    lang: s.language_name || "Unknown",
+    status: s.status || "Queued",
+    avatar: TEAM_COLORS[(s.team_id - 1) % TEAM_COLORS.length],
+  }));
+
+  const page = Math.floor(offset / PAGE_SIZE) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-10" style={{ backgroundColor: "rgba(28,27,31,0.45)", backdropFilter: "blur(3px)" }}>
       <div className={`flex flex-col w-full max-w-4xl h-full max-h-[800px] rounded-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-neutral-900 border border-neutral-800' : 'bg-white'}`}>
@@ -456,13 +524,40 @@ function ViewAllModal({ onClose, darkMode, submissions }) {
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.6" strokeLinecap="round" /></svg>
           </button>
         </div>
+
+        <div className={`flex items-center gap-3 px-7 py-3.5 border-b flex-shrink-0 ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => updateSearch(e.target.value)}
+            placeholder="Search by team name..."
+            className={`flex-1 px-3.5 py-2 text-[13px] rounded-[8px] outline-none font-['Roboto'] ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-500 border border-neutral-700' : 'bg-[#F8F9FA] text-[#1C1B1F] placeholder-neutral-400 border border-[#E0E0E0]'}`}
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => updateStatusFilter(e.target.value)}
+            className={`px-3 py-2 text-[13px] rounded-[8px] outline-none font-['Roboto'] cursor-pointer ${darkMode ? 'bg-neutral-950 text-white border border-neutral-700' : 'bg-[#F8F9FA] text-[#1C1B1F] border border-[#E0E0E0]'}`}
+          >
+            <option value="all">All Submissions</option>
+            <option value="accepted">Accepted Only</option>
+            <option value="errors">Errors & Warnings</option>
+          </select>
+        </div>
+
         <div className="flex-1 overflow-y-auto">
           <div className={`grid px-6 py-3 border-b sticky top-0 z-10 ${darkMode ? 'bg-neutral-950/90 border-neutral-800' : 'bg-[#F8F9FA]/90 border-[#E0E0E0]'} backdrop-blur-md`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
             {["Time", "Team Name", "Problem", "Language", "Status"].map((h) => (
               <div key={h} className="text-[11px] font-bold uppercase tracking-wider text-[#9AA0A6] font-['Roboto']">{h}</div>
             ))}
           </div>
-          {submissions.map((s, idx) => (
+
+          {loading && <LoadingDots darkMode={darkMode} label="Loading submissions..." />}
+
+          {!loading && error && (
+            <div className="p-8 text-center text-[13px] font-['Roboto'] text-[#C62828]">{error}</div>
+          )}
+
+          {!loading && !error && formatted.map((s, idx) => (
             <div key={s.id || idx} className={`grid px-6 py-3.5 items-center border-b transition-colors ${darkMode ? 'border-neutral-800/50 hover:bg-neutral-800/50' : 'border-[#F8F9FA] hover:bg-[#FAFAFA]'}`} style={{ gridTemplateColumns: "100px 1fr 1fr 120px 180px", gap: "12px" }}>
               <span className={`tabular-nums text-[13px] font-['JetBrains_Mono'] ${darkMode ? 'text-neutral-300' : 'text-[#5F6368]'}`}>{s.time}</span>
               <div className="flex items-center gap-2.5">
@@ -477,9 +572,33 @@ function ViewAllModal({ onClose, darkMode, submissions }) {
               <StatusBadge status={s.status} />
             </div>
           ))}
-          {submissions.length === 0 && (
+
+          {!loading && !error && formatted.length === 0 && (
              <div className="p-8 text-center text-[#5F6368] font-['Roboto']">No submissions match the current filters.</div>
           )}
+        </div>
+
+        <div className={`flex items-center justify-between px-7 py-3 border-t flex-shrink-0 ${darkMode ? 'bg-neutral-950/50 border-neutral-800' : 'bg-[#F8F9FA] border-[#E0E0E0]'}`}>
+          <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
+            {total} submission{total === 1 ? "" : "s"} total
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
+              disabled={offset === 0 || loading}
+              className={`px-3 py-1.5 rounded-[6px] text-[12px] font-semibold font-['DM_Sans'] disabled:opacity-40 disabled:cursor-not-allowed ${darkMode ? 'text-neutral-300 hover:bg-neutral-800' : 'text-[#3C4043] hover:bg-[#F1F3F4]'}`}
+            >
+              ← Prev
+            </button>
+            <span className={`text-[12px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Page {page} of {totalPages}</span>
+            <button
+              onClick={() => setOffset((o) => o + PAGE_SIZE)}
+              disabled={offset + PAGE_SIZE >= total || loading}
+              className={`px-3 py-1.5 rounded-[6px] text-[12px] font-semibold font-['DM_Sans'] disabled:opacity-40 disabled:cursor-not-allowed ${darkMode ? 'text-neutral-300 hover:bg-neutral-800' : 'text-[#3C4043] hover:bg-[#F1F3F4]'}`}
+            >
+              Next →
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -503,6 +622,7 @@ export default function AdminOverview() {
   // State for Filters
   const [filterAcceptedOnly, setFilterAcceptedOnly] = useState(false);
   const [filterErrorsWarnings, setFilterErrorsWarnings] = useState(false);
+  const [filterSearch, setFilterSearch] = useState("");
 
   useEffect(() => {
     if (!selectedContestId) {
@@ -564,6 +684,11 @@ export default function AdminOverview() {
   };
 
   const stats = overviewData?.stats;
+  const trends = overviewData?.trends || {
+    submissions: new Array(7).fill(0),
+    active_teams: new Array(7).fill(0),
+    success_rate: new Array(7).fill(0),
+  };
 
   const submissions = useMemo(() => {
     const rows = overviewData?.recent_submissions || [];
@@ -604,14 +729,17 @@ export default function AdminOverview() {
 
   // Filter the Data
   const filteredSubmissions = useMemo(() => {
+    const query = filterSearch.trim().toLowerCase();
+
     return submissions.filter((sub) => {
+      if (query && !sub.team.toLowerCase().includes(query)) return false;
       if (isAllSubmissions) return true;
       if (filterAcceptedOnly && sub.status?.toUpperCase() === "ACCEPTED") return true;
       const errorStatuses = ["WRONG ANSWER", "TIME LIMIT EXCEEDED", "COMPILATION ERROR", "RUNTIME ERROR",];
       if (filterErrorsWarnings && errorStatuses.includes(sub.status?.toUpperCase())) return true;
       return false;
     });
-  }, [submissions, filterAcceptedOnly, filterErrorsWarnings, isAllSubmissions,]);
+  }, [submissions, filterAcceptedOnly, filterErrorsWarnings, isAllSubmissions, filterSearch]);
 
   if (!selectedContestId) {
     return (
@@ -672,19 +800,27 @@ export default function AdminOverview() {
                 <path d="M2 4h10M4 7h6M6 10h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
               </svg>
               Filter
-              {(!isAllSubmissions) && (
+              {(!isAllSubmissions || filterSearch.trim()) && (
                 <span className="w-2 h-2 rounded-full bg-[#3A7CF5] absolute -top-1 -right-1"></span>
               )}
             </button>
             {showFilter && (
-              <div className={`absolute top-11 right-0 w-48 rounded-[10px] shadow-lg border p-2 z-20 font-['Roboto'] text-[13px] ${darkMode ? 'bg-neutral-900 border-neutral-700 text-neutral-200' : 'bg-white border-[#E0E0E0] text-[#3C4043]'}`}>
+              <div className={`absolute top-11 right-0 w-56 rounded-[10px] shadow-lg border p-2 z-20 font-['Roboto'] text-[13px] ${darkMode ? 'bg-neutral-900 border-neutral-700 text-neutral-200' : 'bg-white border-[#E0E0E0] text-[#3C4043]'}`}>
+                <input
+                  type="text"
+                  value={filterSearch}
+                  onChange={(e) => setFilterSearch(e.target.value)}
+                  placeholder="Search by team name..."
+                  className={`w-full px-3 py-2 mb-1 text-[13px] rounded-[8px] outline-none ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-500 border border-neutral-700' : 'bg-[#F8F9FA] text-[#1C1B1F] placeholder-neutral-400 border border-[#E0E0E0]'}`}
+                />
+                <div className={`h-px my-1 ${darkMode ? 'bg-neutral-800' : 'bg-[#F1F3F4]'}`} />
                 <label className="flex items-center gap-2 p-2 hover:bg-[#F1F3F4] dark:hover:bg-neutral-800 rounded cursor-pointer">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={isAllSubmissions}
                     onChange={handleAllSubmissionsChange}
                     className="accent-[#3A7CF5]"
-                  /> 
+                  />
                   All Submissions
                 </label>
                 <label className="flex items-center gap-2 p-2 hover:bg-[#F1F3F4] dark:hover:bg-neutral-800 rounded cursor-pointer">
@@ -743,7 +879,7 @@ export default function AdminOverview() {
             bg: darkMode ? "rgba(66,133,244,0.15)" : "#E8F0FE",
             change: "",
             changeUp: false,
-            sparkPoints: [30, 34, 33, 36, 38, 40, 42],
+            sparkPoints: trends.active_teams,
             icon: (
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                 <circle cx="8" cy="7" r="4" stroke="#4285F4" strokeWidth="1.6" />
@@ -761,7 +897,7 @@ export default function AdminOverview() {
             bg: darkMode ? "rgba(52,168,83,0.15)" : "#E8F5E9",
             change: overviewLoading ? "Loading activity" : `↑ ${stats?.submissions_last_five_minutes ?? 0} in last 5 min`,
             changeUp: true,
-            sparkPoints: [80, 95, 110, 125, 140, 162, 184],
+            sparkPoints: trends.submissions,
             icon: (
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                 <path d="M4 2h10l5 5v13H4V2Z" stroke="#34A853" strokeWidth="1.6" strokeLinejoin="round" />
@@ -780,7 +916,7 @@ export default function AdminOverview() {
             bg: darkMode ? "rgba(230,81,0,0.15)" : "#FFF8E1",
             change: overviewLoading ? "Loading results" : `${stats?.accepted_submissions ?? 0} accepted of ${ stats?.total_submissions ?? 0}`,
             changeUp: false,
-            sparkPoints: [40, 38, 35, 37, 34, 33, 34],
+            sparkPoints: trends.success_rate,
             icon: (
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                 <circle cx="11" cy="11" r="9" stroke="#FBBC04" strokeWidth="1.6" />
@@ -898,7 +1034,7 @@ export default function AdminOverview() {
           competitionName={selectedContest?.competition_name}
         />
       )}
-      {showAllFeeds && <ViewAllModal onClose={() => setShowAllFeeds(false)} darkMode={darkMode} submissions={filteredSubmissions} />}
+      {showAllFeeds && <ViewAllModal onClose={() => setShowAllFeeds(false)} darkMode={darkMode} competitionId={selectedContestId} />}
     </div>
   );
 }

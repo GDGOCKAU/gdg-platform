@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import axios from "axios";
 import { useContest } from "../context/ContestContext";
 import { API_BASE_URL } from "../config";
+import LoadingDots from "../components/LoadingDots";
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/admin`,
@@ -149,6 +150,45 @@ function EndContestModal({ contestName, onConfirm, onCancel, ending, darkMode })
   );
 }
 
+// Cancel Contest confirmation modal — for a contest that was created by
+// mistake and never actually ran, so it shouldn't count as "Finished" in
+// the archive.
+function CancelContestModal({ contestName, onConfirm, onCancel, cancelling, darkMode }) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "rgba(28,27,31,0.40)", backdropFilter: "blur(2px)" }}>
+      <div className={`rounded-[20px] p-8 flex flex-col gap-6 shadow-2xl ${darkMode ? 'bg-neutral-900 border border-neutral-800' : 'bg-white'}`} style={{ width: "420px" }}>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(234,67,53,0.15)' : '#FFEBEE' }}>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M6 6l10 10M16 6L6 16" stroke="#EA4335" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </div>
+          <h3 className={`text-[18px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Cancel this contest?</h3>
+          <p className={`text-[14px] leading-relaxed font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
+            <strong className={darkMode ? 'text-white' : 'text-[#1C1B1F]'}>{contestName}</strong> will be marked as Cancelled and cleared from the active slot. Unlike "End Contest", it will not appear in the Finished archive.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={cancelling}
+            className={`flex-1 py-2.5 rounded-[10px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] disabled:opacity-60 ${darkMode ? 'border-neutral-700 text-neutral-300 hover:bg-neutral-800' : 'border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
+          >
+            Keep Contest
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={cancelling}
+            className="flex-1 py-2.5 rounded-[10px] text-[14px] font-semibold text-white transition-all bg-[#EA4335] hover:bg-[#C62828] font-['DM_Sans'] shadow-[0_2px_6px_rgba(234,67,53,0.30)] disabled:opacity-60"
+          >
+            {cancelling ? "Cancelling..." : "Yes, Cancel Contest"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Archive Detail Pane
 
 function DetailPane({ competition, onClose, darkMode }) {
@@ -203,6 +243,32 @@ function DetailPane({ competition, onClose, darkMode }) {
     }
   };
 
+  const escapeCsvField = (value) => {
+    const str = String(value ?? "");
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+  };
+
+  const handleExportCsv = () => {
+    const rows = leaderboard || [];
+    const header = ["Rank", "Team Name", "Points", "Solved Questions", "Total Time"];
+    const lines = [
+      header.join(","),
+      ...rows.map((t) =>
+        [t.rank, t.team_name, t.points, t.solved_questions, t.total_time].map(escapeCsvField).join(",")
+      ),
+    ];
+
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = `${competition.competition_name}_final_leaderboard.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  };
+
   return (
     <div
       className={`rounded-[16px] overflow-hidden ${darkMode ? 'bg-neutral-900 border-neutral-700 shadow-xl' : 'bg-white border-[#C5D9FB]'}`}
@@ -228,14 +294,28 @@ function DetailPane({ competition, onClose, darkMode }) {
             </div>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-neutral-800' : 'hover:bg-[#F1F3F4]'}`}
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 3l8 8M11 3l-8 8" stroke={darkMode ? "#A3A3A3" : "#9AA0A6"} strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          {leaderboard && leaderboard.length > 0 && (
+            <button
+              onClick={handleExportCsv}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[12px] font-semibold transition-all border font-['DM_Sans'] ${darkMode ? 'border-blue-900 text-blue-400 hover:bg-blue-950' : 'border-[#C5D9FB] text-[#3A7CF5] hover:bg-[#E8F0FE]'}`}
+            >
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                <path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M2 10v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              Export CSV
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-neutral-800' : 'hover:bg-[#F1F3F4]'}`}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M3 3l8 8M11 3l-8 8" stroke={darkMode ? "#A3A3A3" : "#9AA0A6"} strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -267,9 +347,7 @@ function DetailPane({ competition, onClose, darkMode }) {
           </div>
         )}
 
-        {loading && (
-          <div className={`py-8 text-center text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Loading leaderboard...</div>
-        )}
+        {loading && <LoadingDots darkMode={darkMode} label="Loading leaderboard..." />}
 
         {!loading && error && (
           <div className={`py-8 text-center text-[13px] font-['Roboto'] ${darkMode ? 'text-red-400' : 'text-[#C62828]'}`}>{error}</div>
@@ -390,6 +468,11 @@ export default function ContestSettings() {
 
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [ending, setEnding] = useState(false);
+
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const [freezing, setFreezing] = useState(false);
 
   const [archiveRows, setArchiveRows] = useState([]);
   const [archiveLoading, setArchiveLoading] = useState(true);
@@ -531,6 +614,44 @@ export default function ContestSettings() {
     }
   };
 
+  // A contest cancelled before it ever ran doesn't belong in the "Finished"
+  // archive — Cancelled competitions are simply excluded from the history
+  // query, unlike End Contest which marks it Finished and archives it.
+  const handleCancelContest = async () => {
+    if (!activeDetails) return;
+
+    setCancelling(true);
+    try {
+      await api.patch(`/contests/${activeDetails.competition_id}`, { status: "Cancelled" });
+      setShowCancelConfirm(false);
+      setActiveDetails(null);
+      refreshCompetitions();
+    } catch (error) {
+      setSaveError(error.response?.data?.message || "Unable to cancel this competition.");
+      setShowCancelConfirm(false);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleToggleFreeze = async () => {
+    if (!activeDetails) return;
+
+    const nextStatus = activeDetails.status === "Frozen" ? "Active" : "Frozen";
+
+    setFreezing(true);
+    setSaveError("");
+    try {
+      const response = await api.patch(`/contests/${activeDetails.competition_id}`, { status: nextStatus });
+      setActiveDetails(response.data.competition);
+      refreshCompetitions();
+    } catch (error) {
+      setSaveError(error.response?.data?.message || "Unable to update the scoreboard freeze state.");
+    } finally {
+      setFreezing(false);
+    }
+  };
+
   const showForm = !activeDetails || editing;
 
   const statusBadgeStyle = (status) => {
@@ -598,8 +719,8 @@ export default function ContestSettings() {
         </div>
 
         {loadingActive ? (
-          <div className={`px-7 py-10 text-center text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
-            Loading contest details...
+          <div className="px-7 py-10">
+            <LoadingDots darkMode={darkMode} label="Loading contest details..." />
           </div>
         ) : showForm ? (
           <>
@@ -727,12 +848,34 @@ export default function ContestSettings() {
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowEndConfirm(true)}
-                  className={`px-5 py-2.5 rounded-[10px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] ${darkMode ? 'border-red-900/50 text-red-400 hover:bg-red-950/40' : 'border-[#FFCDD2] text-[#EA4335] hover:bg-[#FFEBEE]'}`}
-                >
-                  End Contest
-                </button>
+                {activeDetails.status === "Upcoming" ? (
+                  <button
+                    onClick={() => setShowCancelConfirm(true)}
+                    className={`px-5 py-2.5 rounded-[10px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] ${darkMode ? 'border-red-900/50 text-red-400 hover:bg-red-950/40' : 'border-[#FFCDD2] text-[#EA4335] hover:bg-[#FFEBEE]'}`}
+                  >
+                    Cancel Contest
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleToggleFreeze}
+                      disabled={freezing}
+                      className={`px-5 py-2.5 rounded-[10px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] disabled:opacity-60 ${darkMode ? 'border-neutral-700 text-neutral-300 hover:bg-neutral-800' : 'border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
+                    >
+                      {freezing
+                        ? "Updating..."
+                        : activeDetails.status === "Frozen"
+                          ? "Unfreeze Scoreboard"
+                          : "Freeze Scoreboard"}
+                    </button>
+                    <button
+                      onClick={() => setShowEndConfirm(true)}
+                      className={`px-5 py-2.5 rounded-[10px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] ${darkMode ? 'border-red-900/50 text-red-400 hover:bg-red-950/40' : 'border-[#FFCDD2] text-[#EA4335] hover:bg-[#FFEBEE]'}`}
+                    >
+                      End Contest
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={enterEditMode}
                   className="flex items-center gap-2 px-6 py-2.5 rounded-[100px] text-[14px] font-semibold text-white bg-[#3A7CF5] hover:bg-[#2563EB] transition-all active:scale-[0.97] font-['DM_Sans'] shadow-[0_2px_10px_rgba(58,124,245,0.35)]"
@@ -792,11 +935,7 @@ export default function ContestSettings() {
           ))}
         </div>
 
-        {archiveLoading && (
-          <div className={`flex flex-col items-center justify-center py-14 gap-2`}>
-            <span className={`text-[14px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Loading archive...</span>
-          </div>
-        )}
+        {archiveLoading && <LoadingDots darkMode={darkMode} label="Loading archive..." />}
 
         {!archiveLoading && archiveError && (
           <div className="flex flex-col items-center justify-center py-14 gap-2">
@@ -904,6 +1043,16 @@ export default function ContestSettings() {
           onConfirm={handleEndContest}
           onCancel={() => setShowEndConfirm(false)}
           ending={ending}
+          darkMode={darkMode}
+        />
+      )}
+
+      {showCancelConfirm && activeDetails && (
+        <CancelContestModal
+          contestName={activeDetails.competition_name}
+          onConfirm={handleCancelContest}
+          onCancel={() => setShowCancelConfirm(false)}
+          cancelling={cancelling}
           darkMode={darkMode}
         />
       )}
