@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import gdgLogoImg from "./assets/gdg-logo.png";
 import { useAuth } from "./context/AuthContext";
+import { API_BASE_URL } from "./config";
 
 
 
@@ -112,7 +113,7 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
 
     const fetchLeaderboard = () => {
       axios
-        .get(`http://localhost:5000/api/leaderboard/${user.competition_id}`, {
+        .get(`${API_BASE_URL}/api/leaderboard/${user.competition_id}`, {
           withCredentials: true,
         })
         .then((response) => {

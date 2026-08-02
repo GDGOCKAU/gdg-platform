@@ -4,6 +4,7 @@ import ProblemWorkspace from "./ProblemWorkspace";
 import LeaderboardView from "./LeaderboardView";
 import { useNavigate } from "react-router-dom";
 import LoadingScreen from "./components/LoadingScreen";
+import { API_BASE_URL } from "./config";
 
 function GDGLogo({ darkMode }) {
   return (
@@ -132,7 +133,7 @@ export default function Dashboard({ darkMode, setDarkMode }) {
         setProblemsError("");
 
         const response = await fetch(
-          "http://localhost:5000/api/problems",{credentials: "include",}
+          `${API_BASE_URL}/api/problems`,{credentials: "include",}
         );
 
         const data = await response.json();
@@ -157,7 +158,7 @@ export default function Dashboard({ darkMode, setDarkMode }) {
         setStatsError("");
 
         const response = await fetch(
-          "http://localhost:5000/api/home/dashboard",{credentials: "include",}
+          `${API_BASE_URL}/api/home/dashboard`,{credentials: "include",}
         );
 
         const data = await response.json();

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from 'react-router-dom';
 import { useContest } from '../context/ContestContext';
+import { API_BASE_URL } from '../config';
 
 // Constants & Status Badges 
 
@@ -86,7 +87,7 @@ function AnnouncementModal({
         setSubmitError("");
 
         const response = await fetch(
-          "http://localhost:5000/api/admin/overview/announcements",
+          `${API_BASE_URL}/api/admin/overview/announcements`,
           {
             method: "POST",
             headers: {
@@ -428,7 +429,7 @@ export default function AdminOverview() {
         setOverviewError("");
 
         const response = await fetch(
-          `http://localhost:5000/api/admin/overview?competition_id=${selectedContestId}`,
+          `${API_BASE_URL}/api/admin/overview?competition_id=${selectedContestId}`,
           {
             method: "GET",
             credentials: "include",

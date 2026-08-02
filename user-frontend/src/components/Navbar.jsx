@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import gdgLogoImg from "../assets/gdg-logo.png";
+import { API_BASE_URL } from "../config";
 
 
 function GDGLogo({ darkMode }) {
@@ -66,7 +67,7 @@ const Navbar = ({darkMode, setDarkMode,}) => {
       setIsUpdatingTheme(true);
       setDarkMode(newDarkMode);
       
-      const response = await fetch("http://localhost:5000/api/users/theme", {
+      const response = await fetch(`${API_BASE_URL}/api/users/theme`, {
         method: "PATCH",
         credentials: "include",
         headers: {

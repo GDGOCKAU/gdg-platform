@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import axios from "axios";
 import { useContest } from "../context/ContestContext";
+import { API_BASE_URL } from "../config";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api/admin",
+  baseURL: `${API_BASE_URL}/api/admin`,
   withCredentials: true,
 });
 

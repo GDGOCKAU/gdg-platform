@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import axios from "axios";
 import { useContest } from "../context/ContestContext";
+import { API_BASE_URL } from "../config";
 
-// Config 
+// Config
 
-// TODO: move baseURL to an environment variable (VITE_API_URL) before deploying to production.
 const api = axios.create({
-  baseURL: "http://localhost:5000/api/admin",
+  baseURL: `${API_BASE_URL}/api/admin`,
   withCredentials: true,
 });
 

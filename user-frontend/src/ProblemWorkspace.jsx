@@ -3,6 +3,7 @@ import gdgLogoImg from "./assets/gdg-logo.png";
 import { useNavigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import LoadingScreen from "./components/LoadingScreen";
+import { API_BASE_URL } from "./config";
 
 function GDGLogo({ darkMode }) {
   return (
@@ -250,7 +251,7 @@ public class Main {
       await new Promise((resolve) => setTimeout(resolve, pollingDelay));
 
       const response = await fetch(
-        `http://localhost:5000/api/submissions/${submissionId}`,
+        `${API_BASE_URL}/api/submissions/${submissionId}`,
         {
           credentials: "include",
         }
@@ -291,7 +292,7 @@ public class Main {
       const selectedLanguage = submissionLanguageMap[language];
 
       const response = await fetch(
-        "http://localhost:5000/api/submissions",
+        `${API_BASE_URL}/api/submissions`,
         {
           method: "POST",
           credentials: "include",
@@ -373,7 +374,7 @@ public class Main {
     const fetchProblem = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/problems/${problemId}`,{credentials: "include",}
+          `${API_BASE_URL}/api/problems/${problemId}`,{credentials: "include",}
         );
 
         const data = await response.json();

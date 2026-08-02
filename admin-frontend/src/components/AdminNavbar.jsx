@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useContest } from "../context/ContestContext";
-
-const API_BASE_URL = "http://localhost:5000";
+import { API_BASE_URL } from "../config";
 
 export default function AdminHeader({
   darkMode,

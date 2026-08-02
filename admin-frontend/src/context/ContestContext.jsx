@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useCallback, useEffect, useState } from "react";
+import { API_BASE_URL } from "../config";
 
-const API_BASE_URL = "http://localhost:5000";
 const STORAGE_KEY = "admin_selected_contest_id";
 
 // A competition is only offered in the picker while it can still be worked on —
