@@ -28,6 +28,11 @@ async function run() {
     await client.query(schemaSql);
     console.log("Schema applied.");
 
+    const usersSeedSql = fs.readFileSync(path.join(__dirname, "users_seed.sql"), "utf8");
+    console.log("Running users_seed.sql...");
+    await client.query(usersSeedSql);
+    console.log("Users seeded.");
+
     if (!schemaOnly) {
       const sampleDataSql = fs.readFileSync(path.join(__dirname, "sample_data.sql"), "utf8");
       console.log("Running sample_data.sql...");
