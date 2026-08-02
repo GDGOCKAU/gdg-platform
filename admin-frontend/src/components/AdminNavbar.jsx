@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useContest } from "../context/ContestContext";
-import { API_BASE_URL } from "../config";
 
 export default function AdminHeader({
   darkMode,
@@ -14,24 +13,43 @@ export default function AdminHeader({
   } = useContest();
 
   const [showNotifs, setShowNotifs] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] =
-    useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showContestMenu, setShowContestMenu] = useState(false);
 
   const [themeLoading, setThemeLoading] = useState(true);
-  const [themeUpdating, setThemeUpdating] =
-    useState(false);
+  const [themeUpdating, setThemeUpdating] = useState(false);
 
   const [admin, setAdmin] = useState(null);
   const [competitionStatus, setCompetitionStatus] = useState("none"); // "none" | "before" | "live"
   const [remainingTime, setRemainingTime] = useState("00:00:00");
   const [dataLoading, setDataLoading] = useState(true);
 
+  // ─── Password Modal States ───
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
+  const [passwordState, setPasswordState] = useState({
+    loading: false,
+    error: "",
+    success: false,
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [darkMode]);
+  
   useEffect(() => {
     const fetchAdmin = async () => {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/api/admin/auth/me`,
+          "http://localhost:5001/api/admin/auth/me",
           {
             method: "GET",
             credentials: "include",
@@ -62,9 +80,7 @@ export default function AdminHeader({
   }, [setDarkMode]);
 
   const getInitials = (name) => {
-    if (!name) {
-      return "--";
-    }
+    if (!name) return "--";
 
     return name
       .trim()
@@ -79,7 +95,7 @@ export default function AdminHeader({
     const fetchAdminTheme = async () => {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/api/admin/settings/theme`,
+          "http://localhost:5001/api/admin/settings/theme",
           {
             method: "GET",
             credentials: "include",
@@ -104,21 +120,18 @@ export default function AdminHeader({
   }, [setDarkMode]);
 
   const handleThemeToggle = async () => {
-    if (themeLoading || themeUpdating) {
-      return;
-    }
+    if (themeLoading || themeUpdating) return;
 
     const previousDarkMode = darkMode;
     const newDarkMode = !darkMode;
     const newTheme = newDarkMode ? "Dark" : "Light";
 
-    // نغيّر الواجهة مباشرة
     setDarkMode(newDarkMode);
     setThemeUpdating(true);
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/admin/settings/theme`,
+        "http://localhost:5001/api/admin/settings/theme",
         {
           method: "PATCH",
           credentials: "include",
@@ -140,8 +153,6 @@ export default function AdminHeader({
       }
     } catch (error) {
       console.error("Update admin theme error:", error);
-
-      // إذا فشل الحفظ نرجع للثيم السابق
       setDarkMode(previousDarkMode);
     } finally {
       setThemeUpdating(false);
@@ -151,6 +162,59 @@ export default function AdminHeader({
   const handleLogout = () => {
     window.location.href = "/";
   };
+
+  // ─── Handle Password Submission ───
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setPasswordState({ loading: false, error: "", success: false });
+
+    // Basic Validation
+    if (passwordForm.new !== passwordForm.confirm) {
+      setPasswordState({ loading: false, error: "New passwords do not match.", success: false });
+      return;
+    }
+    if (passwordForm.new.length < 6) {
+      setPasswordState({ loading: false, error: "New password must be at least 6 characters.", success: false });
+      return;
+    }
+
+    setPasswordState({ loading: true, error: "", success: false });
+
+    try {
+      // Update this URL to exactly what backend created
+      const response = await fetch("http://localhost:5001/api/admin/auth/change-password", {
+        method: "POST", 
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.current,
+          newPassword: passwordForm.new,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update password.");
+      }
+
+      // Success state!
+      setPasswordState({ loading: false, error: "", success: true });
+      
+      // Auto-close modal after 2 seconds
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordForm({ current: "", new: "", confirm: "" });
+        setPasswordState({ loading: false, error: "", success: false });
+      }, 2000);
+
+    } catch (error) {
+      setPasswordState({ loading: false, error: error.message, success: false });
+    }
+  };
+
   const formatDuration = (ms) => {
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
@@ -209,7 +273,7 @@ export default function AdminHeader({
           : "bg-white border-[#E0E0E0]"
       }`}
     >
-      {/* Contest picker — every admin page uses this to know which contest it's editing */}
+      {/* Contest picker */}
       <div className="relative">
         <button
           type="button"
@@ -371,13 +435,7 @@ export default function AdminHeader({
           </div>
         )}
 
-        <div
-          className={`w-px h-5 ${
-            darkMode
-              ? "bg-neutral-800"
-              : "bg-[#E0E0E0]"
-          }`}
-        />
+        <div className={`w-px h-5 ${darkMode ? "bg-neutral-800" : "bg-[#E0E0E0]"}`} />
 
         {/* Notifications */}
         <div className="relative">
@@ -394,30 +452,10 @@ export default function AdminHeader({
                 : "border-[#E0E0E0] hover:bg-[#F1F3F4]"
             }`}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-            >
-              <path
-                d="M8 2a4 4 0 0 0-4 4v3l-1.5 2h11L12 9V6a4 4 0 0 0-4-4Z"
-                stroke={
-                  darkMode ? "#A3A3A3" : "#5F6368"
-                }
-                strokeWidth="1.4"
-                strokeLinejoin="round"
-              />
-
-              <path
-                d="M6.5 13a1.5 1.5 0 0 0 3 0"
-                stroke={
-                  darkMode ? "#A3A3A3" : "#5F6368"
-                }
-                strokeWidth="1.4"
-              />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2a4 4 0 0 0-4 4v3l-1.5 2h11L12 9V6a4 4 0 0 0-4-4Z" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" strokeLinejoin="round" />
+              <path d="M6.5 13a1.5 1.5 0 0 0 3 0" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" />
             </svg>
-
             <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white bg-[#EA4335] font-['Roboto']">
               3
             </span>
@@ -426,104 +464,28 @@ export default function AdminHeader({
           {showNotifs && (
             <div
               className={`absolute top-10 right-0 w-[320px] rounded-[16px] shadow-lg border overflow-hidden flex flex-col font-['Roboto'] ${
-                darkMode
-                  ? "bg-neutral-900 border-neutral-700"
-                  : "bg-white border-[#E0E0E0]"
+                darkMode ? "bg-neutral-900 border-neutral-700" : "bg-white border-[#E0E0E0]"
               }`}
             >
-              <div
-                className={`px-4 py-3 border-b font-bold text-[14px] ${
-                  darkMode
-                    ? "border-neutral-800 text-white"
-                    : "border-[#F1F3F4] text-[#1C1B1F]"
-                }`}
-              >
+              <div className={`px-4 py-3 border-b font-bold text-[14px] ${darkMode ? "border-neutral-800 text-white" : "border-[#F1F3F4] text-[#1C1B1F]"}`}>
                 Recent Alerts
               </div>
-
               <div className="flex flex-col">
-                <div
-                  className={`px-4 py-3 border-b text-[13px] ${
-                    darkMode
-                      ? "border-neutral-800 hover:bg-neutral-800"
-                      : "border-[#F1F3F4] hover:bg-[#F8F9FA]"
-                  }`}
-                >
-                  <strong
-                    className={
-                      darkMode
-                        ? "text-blue-400"
-                        : "text-[#3A7CF5]"
-                    }
-                  >
-                    System
-                  </strong>
-
-                  <p
-                    className={`mt-0.5 ${
-                      darkMode
-                        ? "text-neutral-300"
-                        : "text-[#5F6368]"
-                    }`}
-                  >
-                    Judge0 cluster #2 connected
-                    successfully.
+                <div className={`px-4 py-3 border-b text-[13px] ${darkMode ? "border-neutral-800 hover:bg-neutral-800" : "border-[#F1F3F4] hover:bg-[#F8F9FA]"}`}>
+                  <strong className={darkMode ? "text-blue-400" : "text-[#3A7CF5]"}>System</strong>
+                  <p className={`mt-0.5 ${darkMode ? "text-neutral-300" : "text-[#5F6368]"}`}>
+                    Judge0 cluster #2 connected successfully.
                   </p>
                 </div>
-
-                <div
-                  className={`px-4 py-3 border-b text-[13px] ${
-                    darkMode
-                      ? "border-neutral-800 hover:bg-neutral-800"
-                      : "border-[#F1F3F4] hover:bg-[#F8F9FA]"
-                  }`}
-                >
-                  <strong
-                    className={
-                      darkMode
-                        ? "text-orange-400"
-                        : "text-[#E65100]"
-                    }
-                  >
-                    Warning
-                  </strong>
-
-                  <p
-                    className={`mt-0.5 ${
-                      darkMode
-                        ? "text-neutral-300"
-                        : "text-[#5F6368]"
-                    }`}
-                  >
-                    Team Byte_Me requested clarification
-                    on Problem C.
+                <div className={`px-4 py-3 border-b text-[13px] ${darkMode ? "border-neutral-800 hover:bg-neutral-800" : "border-[#F1F3F4] hover:bg-[#F8F9FA]"}`}>
+                  <strong className={darkMode ? "text-orange-400" : "text-[#E65100]"}>Warning</strong>
+                  <p className={`mt-0.5 ${darkMode ? "text-neutral-300" : "text-[#5F6368]"}`}>
+                    Team Byte_Me requested clarification on Problem C.
                   </p>
                 </div>
-
-                <div
-                  className={`px-4 py-3 text-[13px] ${
-                    darkMode
-                      ? "hover:bg-neutral-800"
-                      : "hover:bg-[#F8F9FA]"
-                  }`}
-                >
-                  <strong
-                    className={
-                      darkMode
-                        ? "text-emerald-400"
-                        : "text-[#2E7D32]"
-                    }
-                  >
-                    Contest
-                  </strong>
-
-                  <p
-                    className={`mt-0.5 ${
-                      darkMode
-                        ? "text-neutral-300"
-                        : "text-[#5F6368]"
-                    }`}
-                  >
+                <div className={`px-4 py-3 text-[13px] ${darkMode ? "hover:bg-neutral-800" : "hover:bg-[#F8F9FA]"}`}>
+                  <strong className={darkMode ? "text-emerald-400" : "text-[#2E7D32]"}>Contest</strong>
+                  <p className={`mt-0.5 ${darkMode ? "text-neutral-300" : "text-[#5F6368]"}`}>
                     {competitionStatus === "before"
                       ? `Starts in: ${remainingTime}`
                       : competitionStatus === "live"
@@ -549,41 +511,13 @@ export default function AdminHeader({
           }`}
         >
           {darkMode ? (
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-            >
-              <circle
-                cx="8"
-                cy="8"
-                r="3.5"
-                stroke="#A3A3A3"
-                strokeWidth="1.4"
-              />
-
-              <path
-                d="M8 1V2.5M8 13.5V15M1 8H2.5M13.5 8H15M3.05 3.05L4.11 4.11M11.89 11.89L12.95 12.95M3.05 12.95L4.11 11.89M11.89 4.11L12.95 3.05"
-                stroke="#A3A3A3"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-              />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="3.5" stroke="#A3A3A3" strokeWidth="1.4" />
+              <path d="M8 1V2.5M8 13.5V15M1 8H2.5M13.5 8H15M3.05 3.05L4.11 4.11M11.89 11.89L12.95 12.95M3.05 12.95L4.11 11.89M11.89 4.11L12.95 3.05" stroke="#A3A3A3" strokeWidth="1.4" strokeLinecap="round" />
             </svg>
           ) : (
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-            >
-              <path
-                d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7Z"
-                stroke="#5F6368"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7Z" stroke="#5F6368" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </button>
@@ -606,9 +540,7 @@ export default function AdminHeader({
             <div className="flex flex-col text-left">
               <span
                 className={`text-[13px] font-semibold font-['DM_Sans'] ${
-                  darkMode
-                    ? "text-white"
-                    : "text-[#1C1B1F]"
+                  darkMode ? "text-white" : "text-[#1C1B1F]"
                 }`}
               >
                {dataLoading ? "Loading..." : admin?.user_name}
@@ -628,6 +560,22 @@ export default function AdminHeader({
                   : "bg-white border-[#E0E0E0]"
               }`}
             >
+              {/* ─── NEW: Change Password Option ─── */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPasswordModal(true);
+                  setShowProfileMenu(false);
+                }}
+                className={`w-full text-left px-4 py-3 text-[14px] font-semibold transition-colors border-b ${
+                  darkMode
+                    ? "border-neutral-800 text-neutral-200 hover:bg-neutral-800"
+                    : "border-[#F1F3F4] text-[#1C1B1F] hover:bg-[#F8F9FA]"
+                }`}
+              >
+                Change Password
+              </button>
+
               <button
                 type="button"
                 onClick={handleLogout}
@@ -643,6 +591,138 @@ export default function AdminHeader({
           )}
         </div>
       </div>
+
+      {/* ─── NEW: Password Change Modal ─── */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div
+            className={`w-full max-w-md p-6 rounded-[16px] shadow-2xl border font-['Roboto'] ${
+              darkMode ? "bg-neutral-900 border-neutral-700" : "bg-white border-[#E0E0E0]"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className={`text-[20px] font-bold font-['DM_Sans'] ${darkMode ? "text-white" : "text-[#1C1B1F]"}`}>
+                Change Password
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setPasswordForm({ current: "", new: "", confirm: "" });
+                  setPasswordState({ loading: false, error: "", success: false });
+                }}
+                className={`p-1 rounded-md transition-colors ${
+                  darkMode ? "text-neutral-400 hover:bg-neutral-800" : "text-[#5F6368] hover:bg-[#F1F3F4]"
+                }`}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            {/* Error / Success Messages */}
+            {passwordState.error && (
+              <div className="mb-4 p-3 rounded-[8px] bg-[#FFEBEE] border border-[#FFCDD2] flex items-start gap-2.5">
+                <span className="text-[13px] text-[#C62828] leading-tight">{passwordState.error}</span>
+              </div>
+            )}
+            {passwordState.success && (
+              <div className="mb-4 p-3 rounded-[8px] bg-[#E8F5E9] border border-[#C8E6C9] flex items-start gap-2.5">
+                <span className="text-[13px] text-[#2E7D32] leading-tight">Password updated successfully! Closing...</span>
+              </div>
+            )}
+
+            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className={`text-[13px] font-medium ${darkMode ? "text-neutral-300" : "text-[#3C4043]"}`}>
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  disabled={passwordState.loading || passwordState.success}
+                  value={passwordForm.current}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                  className={`w-full px-3 py-2.5 text-[14px] rounded-[8px] outline-none border transition-colors disabled:opacity-50 ${
+                    darkMode
+                      ? "bg-neutral-800 border-neutral-700 text-white focus:border-blue-500"
+                      : "bg-white border-[#E0E0E0] text-[#1C1B1F] focus:border-[#3A7CF5]"
+                  }`}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className={`text-[13px] font-medium ${darkMode ? "text-neutral-300" : "text-[#3C4043]"}`}>
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  disabled={passwordState.loading || passwordState.success}
+                  value={passwordForm.new}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                  className={`w-full px-3 py-2.5 text-[14px] rounded-[8px] outline-none border transition-colors disabled:opacity-50 ${
+                    darkMode
+                      ? "bg-neutral-800 border-neutral-700 text-white focus:border-blue-500"
+                      : "bg-white border-[#E0E0E0] text-[#1C1B1F] focus:border-[#3A7CF5]"
+                  }`}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className={`text-[13px] font-medium ${darkMode ? "text-neutral-300" : "text-[#3C4043]"}`}>
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  disabled={passwordState.loading || passwordState.success}
+                  value={passwordForm.confirm}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                  className={`w-full px-3 py-2.5 text-[14px] rounded-[8px] outline-none border transition-colors disabled:opacity-50 ${
+                    darkMode
+                      ? "bg-neutral-800 border-neutral-700 text-white focus:border-blue-500"
+                      : "bg-white border-[#E0E0E0] text-[#1C1B1F] focus:border-[#3A7CF5]"
+                  }`}
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  disabled={passwordState.loading || passwordState.success}
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordForm({ current: "", new: "", confirm: "" });
+                    setPasswordState({ loading: false, error: "", success: false });
+                  }}
+                  className={`px-4 py-2 rounded-[8px] text-[14px] font-semibold transition-colors disabled:opacity-50 ${
+                    darkMode ? "text-neutral-300 hover:bg-neutral-800" : "text-[#5F6368] hover:bg-[#F1F3F4]"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={passwordState.loading || passwordState.success}
+                  className="px-5 py-2 rounded-[8px] bg-[#3A7CF5] text-white text-[14px] font-semibold hover:bg-[#2563EB] transition-colors disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
+                >
+                  {passwordState.loading ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse delay-75" />
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse delay-150" />
+                    </div>
+                  ) : (
+                    "Save Password"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import gdgLogoImg from "./assets/gdg-logo.png";
 import { useAuth } from "./context/AuthContext";
-import { API_BASE_URL } from "./config";
 
 function GDGLogo() {
   return (
@@ -45,6 +44,10 @@ export default function Login() {
   const [accessCode, setAccessCode] = useState("");
   const [focusedField, setFocusedField] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  
+  // Loading state to track when to show the dots 
+  const [isLoading, setIsLoading] = useState(false); 
+  
   const navigate = useNavigate();
   const { setUser } = useAuth();
 
@@ -53,34 +56,42 @@ export default function Login() {
     e.preventDefault();
     setErrorMessage(""); // Reset previous error
 
-
-
     if (!teamName.trim() || !accessCode.trim()) {
       setErrorMessage("Please fill in both Team Name and Access Code.");
       return;
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        teamName,
-        accessCode,
-      }),
-    });
+    // Turn on the loading dots!
+    setIsLoading(true);
 
-    const data = await response.json();
+    try {
+      const response = await fetch("http://localhost:5001/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teamName,
+          accessCode,
+        }),
+      });
 
-    if (!response.ok) {
-        setErrorMessage(data.message);
-        return;
+      const data = await response.json();
+
+      if (!response.ok) {
+          setErrorMessage(data.message);
+          setIsLoading(false); // Turn off the dots if there is an error
+          return;
+      }
+
+      setUser(data.user);
+      navigate("/dashboard"); 
+      
+    } catch (error) {
+      setErrorMessage("Network error. Please try again later.");
+      setIsLoading(false); // Turn off the dots if the server is down
     }
-
-    setUser(data.user);
-    navigate("/dashboard"); 
   };
 
   return (
@@ -165,7 +176,7 @@ export default function Login() {
             <div className="w-2 h-2 rounded-full bg-[#34A853]" />
           </div>
 
-          <div className="w-full max-w-[380px] flex flex-col gap-8">
+          <div className="w-full max-w-[380px] flex flex-col gap-6">
             {/* Form heading */}
             <div className="flex flex-col gap-1.5">
               <h2
@@ -179,18 +190,50 @@ export default function Login() {
               </p>
             </div>
 
-            {/* Error Message Display */}
-            {errorMessage && (
-              <div className="p-3.5 rounded-[8px] bg-[#FFEBEE] border border-[#FFCDD2] flex items-start gap-2.5">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
-                  <circle cx="8" cy="8" r="7" stroke="#EA4335" strokeWidth="1.5" />
-                  <path d="M8 5V8.5M8 11H8.01" stroke="#EA4335" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                <span className="text-[13px] text-[#C62828] leading-tight" style={{ fontFamily: "'Roboto', sans-serif" }}>
-                  {errorMessage}
-                </span>
+            {/* ── DYNAMIC STATUS AREA (COLLAPSES WHEN EMPTY) ── */}
+            {(isLoading || errorMessage) && (
+              <div className="transition-all duration-200">
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2.5 py-2">
+                    {[
+                      { color: "#4285F4", delay: "0s" },
+                      { color: "#EA4335", delay: "0.15s" },
+                      { color: "#FBBC04", delay: "0.3s" },
+                      { color: "#34A853", delay: "0.45s" },
+                    ].map(({ color, delay }) => (
+                      <span
+                        key={color}
+                        style={{
+                          display: "block",
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          backgroundColor: color,
+                          animation: `loginBounce 0.8s cubic-bezier(0.33, 0, 0.66, 1) ${delay} infinite`,
+                        }}
+                      />
+                    ))}
+                    <style>{`
+                      @keyframes loginBounce {
+                        0%, 100% { transform: translateY(0); }
+                        45% { transform: translateY(-8px); }
+                      }
+                    `}</style>
+                  </div>
+                ) : errorMessage ? (
+                  <div className="p-3.5 rounded-[8px] bg-[#FFEBEE] border border-[#FFCDD2] flex items-start gap-2.5">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 mt-0.5">
+                      <circle cx="8" cy="8" r="7" stroke="#EA4335" strokeWidth="1.5" />
+                      <path d="M8 5V8.5M8 11H8.01" stroke="#EA4335" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <span className="text-[13px] text-[#C62828] leading-tight" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                      {errorMessage}
+                    </span>
+                  </div>
+                ) : null}
               </div>
             )}
+            {/* ── END DYNAMIC STATUS AREA ── */}
 
             {/* Form */}
             <form className="flex flex-col gap-5" onSubmit={handleLogin}>
@@ -211,8 +254,9 @@ export default function Login() {
                     onChange={(e) => setTeamName(e.target.value)}
                     onFocus={() => setFocusedField("teamName")}
                     onBlur={() => setFocusedField(null)}
+                    disabled={isLoading}
                     placeholder="e.g., Code_Knights"
-                    className="w-full px-4 py-3 text-[15px] text-[#1C1B1F] bg-white rounded-[8px] outline-none transition-all duration-150"
+                    className="w-full px-4 py-3 text-[15px] text-[#1C1B1F] bg-white rounded-[8px] outline-none transition-all duration-150 disabled:opacity-50"
                     style={{
                       border: focusedField === "teamName"
                         ? "2px solid #3A7CF5"
@@ -220,7 +264,7 @@ export default function Login() {
                       fontFamily: "'Roboto', sans-serif",
                     }}
                   />
-                  {focusedField === "teamName" && (
+                  {focusedField === "teamName" && !isLoading && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <circle cx="8" cy="8" r="7" stroke="#3A7CF5" strokeWidth="1.5" />
@@ -247,9 +291,10 @@ export default function Login() {
                   onChange={(e) => setAccessCode(e.target.value)}
                   onFocus={() => setFocusedField("accessCode")}
                   onBlur={() => setFocusedField(null)}
+                  disabled={isLoading}
                   placeholder="Enter your 6-digit code"
                   maxLength={6}
-                  className="w-full px-4 py-3 text-[15px] text-[#1C1B1F] bg-white rounded-[8px] outline-none transition-all duration-150 tracking-widest"
+                  className="w-full px-4 py-3 text-[15px] text-[#1C1B1F] bg-white rounded-[8px] outline-none transition-all duration-150 tracking-widest disabled:opacity-50"
                   style={{
                     border: focusedField === "accessCode"
                       ? "2px solid #3A7CF5"
@@ -259,32 +304,46 @@ export default function Login() {
                 />
               </div>
 
-              {/* Submit */}
-              <button
-                type="submit"
-                className="w-full py-3.5 text-white font-semibold text-[15px] rounded-[100px] mt-2 transition-all duration-150 active:scale-[0.98]"
-                style={{
-                  backgroundColor: "#3A7CF5",
-                  fontFamily: "'DM Sans', sans-serif",
-                  boxShadow: "0px 2px 6px rgba(58,124,245,0.30), 0px 1px 2px rgba(58,124,245,0.20)",
-                  letterSpacing: "0.2px",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#2563EB";
-                  e.currentTarget.style.boxShadow = "0px 4px 12px rgba(58,124,245,0.40), 0px 2px 4px rgba(58,124,245,0.20)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#3A7CF5";
-                  e.currentTarget.style.boxShadow = "0px 2px 6px rgba(58,124,245,0.30), 0px 1px 2px rgba(58,124,245,0.20)";
-                }}
-              >
-                Join Contest
-              </button>
+              {/* ── BUTTON CONTAINER ── */}
+              <div className="flex flex-col items-center mt-2">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3.5 text-white font-semibold text-[15px] rounded-[100px] transition-all duration-150 disabled:opacity-75 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: "#3A7CF5",
+                    fontFamily: "'DM Sans', sans-serif",
+                    boxShadow: isLoading ? "none" : "0px 2px 6px rgba(58,124,245,0.30), 0px 1px 2px rgba(58,124,245,0.20)",
+                    letterSpacing: "0.2px",
+                  }}
+                  onMouseEnter={(e) => {
+                    if(!isLoading) {
+                      e.currentTarget.style.backgroundColor = "#2563EB";
+                      e.currentTarget.style.boxShadow = "0px 4px 12px rgba(58,124,245,0.40), 0px 2px 4px rgba(58,124,245,0.20)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if(!isLoading) {
+                      e.currentTarget.style.backgroundColor = "#3A7CF5";
+                      e.currentTarget.style.boxShadow = "0px 2px 6px rgba(58,124,245,0.30), 0px 1px 2px rgba(58,124,245,0.20)";
+                    }
+                  }}
+                  onMouseDown={(e) => {
+                    if(!isLoading) e.currentTarget.style.transform = "scale(0.98)";
+                  }}
+                  onMouseUp={(e) => {
+                    if(!isLoading) e.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
+                  Join Contest
+                </button>
+              </div>
+              {/* ── END BUTTON CONTAINER ── */}
 
               {/* Forgot link */}
               <p
-                className="text-center text-[13px] text-[#9AA0A6] mt-1"
-                style={{ fontFamily: "'Roboto', sans-serif" }}
+                className="text-center text-[13px] text-[#9AA0A6]"
+                style={{ fontFamily: "'Roboto', sans-serif", marginTop: "-4px" }}
               >
                 Forgot access code?{" "}
                 <a
