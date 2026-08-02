@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useContest } from "../context/ContestContext";
+import { API_BASE_URL } from "../config";
 
 export default function AdminHeader({
   darkMode,
@@ -49,7 +50,7 @@ export default function AdminHeader({
     const fetchAdmin = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5001/api/admin/auth/me",
+          `${API_BASE_URL}/api/admin/auth/me`,
           {
             method: "GET",
             credentials: "include",
@@ -95,7 +96,7 @@ export default function AdminHeader({
     const fetchAdminTheme = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5001/api/admin/settings/theme",
+          `${API_BASE_URL}/api/admin/settings/theme`,
           {
             method: "GET",
             credentials: "include",
@@ -131,7 +132,7 @@ export default function AdminHeader({
 
     try {
       const response = await fetch(
-        "http://localhost:5001/api/admin/settings/theme",
+        `${API_BASE_URL}/api/admin/settings/theme`,
         {
           method: "PATCH",
           credentials: "include",
@@ -182,7 +183,7 @@ export default function AdminHeader({
 
     try {
       // Update this URL to exactly what backend created
-      const response = await fetch("http://localhost:5001/api/admin/auth/change-password", {
+      const response = await fetch(`${API_BASE_URL}/api/admin/auth/change-password`, {
         method: "POST", 
         credentials: "include",
         headers: {

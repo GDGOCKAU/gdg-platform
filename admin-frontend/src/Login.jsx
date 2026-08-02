@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import gdgLogoImg from "./assets/gdg-logo.png";
+import { API_BASE_URL } from "./config";
 
 function GDGLogo() {
   return (
@@ -65,7 +66,7 @@ export default function Login({ setIsAuthenticated }) {
 
     try {
       const response = await fetch(
-        "http://localhost:5001/api/admin/auth/login",
+        `${API_BASE_URL}/api/admin/auth/login`,
         {
           method: "POST",
           headers: {

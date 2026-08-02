@@ -12,10 +12,22 @@ const allowedOrigins = [
   "http://localhost:5174",
 ];
 
+const isProduction = process.env.NODE_ENV === "production";
+
+// Vite does not pin a port, so it walks to 5175, 5176, ... whenever an earlier
+// one is taken. Outside production any local origin is accepted so a shifted
+// dev server does not silently fail every request.
+const isLocalOrigin = (origin) =>
+  /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      if (!isProduction && isLocalOrigin(origin)) {
         return callback(null, true);
       }
 
