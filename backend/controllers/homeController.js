@@ -5,7 +5,7 @@ const getDashboard = async (req, res) => {
     const { team_id, competition_id } = req.user;
 
     const standingQuery = `
-      SELECT team_id, points, solved_questions, rnk
+      SELECT team_id, points, solved_questions, rnk::int AS rnk
       FROM (
         SELECT
           team_id,
@@ -49,6 +49,32 @@ const getDashboard = async (req, res) => {
   }
 };
 
+const getAnnouncements = async (req, res) => {
+  try {
+    const { competition_id } = req.user;
+
+    const query = `
+      SELECT
+        announcement_id,
+        title,
+        message,
+        created_at
+      FROM announcements
+      WHERE competition_id = $1
+        AND is_published = TRUE
+      ORDER BY created_at DESC, announcement_id DESC
+    `;
+
+    const result = await pool.query(query, [competition_id]);
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Get announcements error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   getDashboard,
+  getAnnouncements,
 };

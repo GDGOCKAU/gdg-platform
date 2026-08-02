@@ -5,6 +5,7 @@ import LeaderboardView from "./LeaderboardView";
 import { useNavigate } from "react-router-dom";
 import LoadingScreen from "./components/LoadingScreen";
 import { API_BASE_URL } from "./config";
+import { useAuth } from "./context/AuthContext";
 
 function GDGLogo({ darkMode }) {
   return (
@@ -108,17 +109,32 @@ function ProblemCard({ problem, onSelect, darkMode }) {
   );
 }
 
-const announcements = [
-  { time: "14:22", color: "#4285F4", text: "Clarification added for Problem B — check problem statement." },
-  { time: "13:58", color: "#FBBC04", text: "System: 1 hour remaining! Standings are now frozen." },
-  { time: "13:30", color: "#34A853", text: "Contest started. Good luck to all 48 teams!" },
-  { time: "13:28", color: "#EA4335", text: "Reminder: No internet access permitted during contest." },
-];
+// How often the live contest data (standings, announcements, solve status) is
+// refreshed. Every team's browser polls on this interval, so lowering it
+// multiplies load on the database.
+const POLL_INTERVAL_MS = 15000;
+
+const announcementColors = ["#4285F4", "#FBBC04", "#34A853", "#EA4335"];
+
+function formatAnnouncementTime(timestamp) {
+  const date = new Date(timestamp);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
 
 export default function Dashboard({ darkMode, setDarkMode }) {
   
   const navigate = useNavigate();
-  
+  const { setUser } = useAuth();
+
   const [problems, setProblems] = useState([]);
   const [isLoadingProblems, setIsLoadingProblems] = useState(true);
   const [problemsError, setProblemsError] = useState("");
@@ -126,15 +142,36 @@ export default function Dashboard({ darkMode, setDarkMode }) {
   const [stats, setStats] = useState(null);
   const [statsError, setStatsError] = useState("");
 
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsError, setAnnouncementsError] = useState("");
+  const [hasLoadedAnnouncements, setHasLoadedAnnouncements] = useState(false);
+
   useEffect(() => {
-    const fetchProblems = async () => {
+    let cancelled = false;
+
+    // Contests can outlast the participant token. A 401 mid-poll means the
+    // session expired, so drop the user and let ProtectedRoute send them to
+    // the login page rather than leaving frozen numbers on screen.
+    const handleExpiredSession = () => {
+      if (cancelled) return;
+      setUser(null);
+    };
+
+    const fetchProblems = async ({ isPoll = false } = {}) => {
       try {
-        setIsLoadingProblems(true);
-        setProblemsError("");
+        if (!isPoll) {
+          setIsLoadingProblems(true);
+          setProblemsError("");
+        }
 
         const response = await fetch(
           `${API_BASE_URL}/api/problems`,{credentials: "include",}
         );
+
+        if (response.status === 401) {
+          handleExpiredSession();
+          return;
+        }
 
         const data = await response.json();
 
@@ -144,22 +181,33 @@ export default function Dashboard({ darkMode, setDarkMode }) {
           );
         }
 
+        if (cancelled) return;
+
         setProblems(data);
+        setProblemsError("");
       } catch (error) {
         console.error("Fetch problems error:", error);
+
+        if (cancelled || isPoll) return;
+
         setProblemsError(error.message);
       } finally {
-        setIsLoadingProblems(false);
+        if (!cancelled && !isPoll) {
+          setIsLoadingProblems(false);
+        }
       }
     };
 
-    const fetchStats = async () => {
+    const fetchStats = async ({ isPoll = false } = {}) => {
       try {
-        setStatsError("");
-
         const response = await fetch(
           `${API_BASE_URL}/api/home/dashboard`,{credentials: "include",}
         );
+
+        if (response.status === 401) {
+          handleExpiredSession();
+          return;
+        }
 
         const data = await response.json();
 
@@ -169,16 +217,84 @@ export default function Dashboard({ darkMode, setDarkMode }) {
           );
         }
 
+        if (cancelled) return;
+
         setStats(data);
+        setStatsError("");
       } catch (error) {
         console.error("Fetch dashboard stats error:", error);
+
+        // A dropped poll keeps the last good values on screen instead of
+        // replacing the panel with an error banner every interval.
+        if (cancelled || isPoll) return;
+
         setStatsError(error.message);
       }
     };
 
+    const fetchAnnouncements = async ({ isPoll = false } = {}) => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/home/announcements`,{credentials: "include",}
+        );
+
+        if (response.status === 401) {
+          handleExpiredSession();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message || "Failed to fetch announcements"
+          );
+        }
+
+        if (cancelled) return;
+
+        setAnnouncements(data);
+        setAnnouncementsError("");
+        setHasLoadedAnnouncements(true);
+      } catch (error) {
+        console.error("Fetch announcements error:", error);
+
+        if (cancelled || isPoll) return;
+
+        setAnnouncementsError(error.message);
+      }
+    };
+
+    const poll = () => {
+      // Background tabs do not need fresh standings, and skipping them keeps
+      // idle browsers from querying the database all contest long.
+      if (document.visibilityState !== "visible") return;
+
+      fetchProblems({ isPoll: true });
+      fetchStats({ isPoll: true });
+      fetchAnnouncements({ isPoll: true });
+    };
+
     fetchProblems();
     fetchStats();
-  }, []);
+    fetchAnnouncements();
+
+    const intervalId = setInterval(poll, POLL_INTERVAL_MS);
+
+    // Catch up as soon as the tab is focused instead of waiting out the
+    // remainder of the interval.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [setUser]);
 
   const solvedCount = stats?.solved ?? 0;
   const totalProblems = stats?.total_problems ?? problems.length;
@@ -254,14 +370,21 @@ export default function Dashboard({ darkMode, setDarkMode }) {
 
           <div className="rounded-[16px] p-5 flex flex-col gap-4" style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}` }}>
             <h3 className="text-[14px] font-bold" style={{ color: textColor }}>Announcements</h3>
+            {announcementsError && (
+              <p className="text-[12px]" style={{ color: "#B71C1C" }}>{announcementsError}</p>
+            )}
+            {!announcementsError && hasLoadedAnnouncements && announcements.length === 0 && (
+              <p className="text-[12px]" style={{ color: darkMode ? "#888888" : "#9AA0A6" }}>No announcements yet.</p>
+            )}
             <div className="flex flex-col">
               {announcements.map((a, i) => (
-                <div key={i} className="flex gap-3 relative">
+                <div key={a.announcement_id} className="flex gap-3 relative">
                   {i < announcements.length - 1 && <div className="absolute left-[6px] top-4 bottom-0 w-px" style={{ backgroundColor: borderColor }} />}
-                  <div className="flex-shrink-0 w-3 h-3 rounded-full mt-1 relative z-10" style={{ backgroundColor: a.color, outline: `2px solid ${cardBg}` }} />
+                  <div className="flex-shrink-0 w-3 h-3 rounded-full mt-1 relative z-10" style={{ backgroundColor: announcementColors[a.announcement_id % announcementColors.length], outline: `2px solid ${cardBg}` }} />
                   <div className="pb-4 min-w-0">
-                    <div className="text-[11px] mb-0.5" style={{ color: darkMode ? "#888888" : "#9AA0A6" }}>{a.time}</div>
-                    <div className="text-[12px] leading-snug" style={{ color: darkMode ? "#CCCCCC" : "#3C4043" }}>{a.text}</div>
+                    <div className="text-[11px] mb-0.5" style={{ color: darkMode ? "#888888" : "#9AA0A6" }}>{formatAnnouncementTime(a.created_at)}</div>
+                    <div className="text-[12px] font-semibold leading-snug" style={{ color: textColor }}>{a.title}</div>
+                    <div className="text-[12px] leading-snug" style={{ color: darkMode ? "#CCCCCC" : "#3C4043" }}>{a.message}</div>
                   </div>
                 </div>
               ))}
