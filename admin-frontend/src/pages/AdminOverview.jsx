@@ -273,7 +273,7 @@ function AnnouncementModal({
                   setTitle(event.target.value)
                 }
                 placeholder="e.g., Update on Problem B"
-                maxLength={150}
+                maxLength={100}
                 disabled={submitting}
                 className={`w-full px-4 py-3 text-[14px] rounded-[8px] outline-none border ${
                   darkMode
@@ -289,7 +289,7 @@ function AnnouncementModal({
                     : "text-[#9AA0A6]"
                 }`}
               >
-                {title.length}/150
+                {title.length}/100
               </span>
             </div>
 
@@ -355,6 +355,97 @@ function AnnouncementModal({
     );
   }
 
+function AnnouncementHistoryModal({ onClose, darkMode, competitionId, competitionName }) {
+  const [announcements, setAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+
+    const fetchAnnouncements = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/admin/overview/announcements?competition_id=${competitionId}`,
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to load announcements");
+        }
+
+        if (!ignore) setAnnouncements(data.announcements || []);
+      } catch (err) {
+        console.error("Fetch announcements error:", err);
+        if (!ignore) setError(err.message);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    fetchAnnouncements();
+
+    return () => {
+      ignore = true;
+    };
+  }, [competitionId]);
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-10"
+      style={{ backgroundColor: "rgba(28,27,31,0.45)", backdropFilter: "blur(3px)" }}
+    >
+      <div className={`flex flex-col w-full max-w-2xl h-full max-h-[640px] rounded-[24px] shadow-2xl overflow-hidden ${darkMode ? 'bg-neutral-900 border border-neutral-800' : 'bg-white'}`}>
+        <div className={`flex items-center justify-between px-7 py-5 border-b flex-shrink-0 ${darkMode ? 'border-neutral-800' : 'border-[#F1F3F4]'}`}>
+          <div>
+            <h2 className={`text-[18px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Announcement History</h2>
+            <p className={`text-[12px] mt-0.5 font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>{competitionName}</p>
+          </div>
+          <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-neutral-800' : 'hover:bg-[#F1F3F4]'}`}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.6" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-7 py-5 flex flex-col gap-4">
+          {loading && (
+            <p className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>Loading announcements...</p>
+          )}
+
+          {!loading && error && (
+            <div className={`px-4 py-3 rounded-[10px] border text-[13px] font-['Roboto'] ${darkMode ? "bg-red-950/30 border-red-900/50 text-red-400" : "bg-[#FFEBEE] border-[#FFCDD2] text-[#C62828]"}`}>
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && announcements.length === 0 && (
+            <p className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>No announcements published yet for this contest.</p>
+          )}
+
+          {!loading && !error && announcements.map((a) => (
+            <div key={a.announcement_id} className={`rounded-[12px] border p-4 flex flex-col gap-1.5 ${darkMode ? 'border-neutral-800 bg-neutral-950/40' : 'border-[#E0E0E0] bg-[#F8F9FA]'}`}>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className={`text-[14px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>{a.title}</h3>
+                <span className={`text-[11px] flex-shrink-0 font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
+                  {new Date(a.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+                </span>
+              </div>
+              <p className={`text-[13px] leading-snug font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>{a.message}</p>
+              <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>by {a.created_by_name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ViewAllModal({ onClose, darkMode, submissions }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-10" style={{ backgroundColor: "rgba(28,27,31,0.45)", backdropFilter: "blur(3px)" }}>
@@ -406,6 +497,7 @@ export default function AdminOverview() {
 
   const [showFilter, setShowFilter] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [showAnnouncementHistory, setShowAnnouncementHistory] = useState(false);
   const [showAllFeeds, setShowAllFeeds] = useState(false);
 
   // State for Filters
@@ -617,7 +709,14 @@ export default function AdminOverview() {
             )}
           </div>
 
-          <button 
+          <button
+            onClick={() => setShowAnnouncementHistory(true)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors font-['DM_Sans'] ${darkMode ? 'border-neutral-800 bg-neutral-900 text-neutral-200 hover:bg-neutral-800' : 'border-[#E0E0E0] bg-white text-[#3C4043] hover:bg-[#F1F3F4]'}`}
+          >
+            History
+          </button>
+
+          <button
             onClick={() => setShowAnnouncement(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-semibold text-white bg-[#3A7CF5] hover:bg-[#2563EB] transition-all font-['DM_Sans'] shadow-[0_2px_6px_rgba(58,124,245,0.30)]"
           >
@@ -786,6 +885,14 @@ export default function AdminOverview() {
       {showAnnouncement && (
         <AnnouncementModal
           onClose={() => setShowAnnouncement(false)}
+          darkMode={darkMode}
+          competitionId={selectedContestId}
+          competitionName={selectedContest?.competition_name}
+        />
+      )}
+      {showAnnouncementHistory && (
+        <AnnouncementHistoryModal
+          onClose={() => setShowAnnouncementHistory(false)}
           darkMode={darkMode}
           competitionId={selectedContestId}
           competitionName={selectedContest?.competition_name}

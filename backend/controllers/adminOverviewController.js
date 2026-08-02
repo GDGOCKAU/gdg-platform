@@ -161,9 +161,9 @@ const createAnnouncement = async (req, res) => {
       });
     }
 
-    if (title.trim().length > 150) {
+    if (title.trim().length > 100) {
       return res.status(400).json({
-        message: "Title must not exceed 150 characters",
+        message: "Title must not exceed 100 characters",
       });
     }
 
@@ -224,6 +224,48 @@ const createAnnouncement = async (req, res) => {
   }
 };
 
+const getAnnouncements = async (req, res) => {
+  try {
+    const competitionId = Number(req.query.competition_id);
+
+    if (!competitionId) {
+      return res.status(400).json({
+        message: "competition_id is required",
+      });
+    }
+
+    const result = await pool.query(
+      `
+        SELECT
+          a.announcement_id,
+          a.competition_id,
+          a.title,
+          a.message,
+          a.is_published,
+          a.created_at,
+          u.user_name AS created_by_name
+        FROM announcements a
+        INNER JOIN users u
+          ON u.user_id = a.created_by
+        WHERE a.competition_id = $1
+        ORDER BY a.created_at DESC
+        LIMIT 50
+      `,
+      [competitionId]
+    );
+
+    return res.status(200).json({
+      announcements: result.rows,
+    });
+  } catch (error) {
+    console.error("Get announcements error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
 const getAvailableCompetitions = async (req, res) => {
   try {
     const result = await pool.query(`
@@ -250,5 +292,5 @@ const getAvailableCompetitions = async (req, res) => {
 };
 
 module.exports = {
-  getAdminOverview, createAnnouncement, getAvailableCompetitions,
+  getAdminOverview, createAnnouncement, getAnnouncements, getAvailableCompetitions,
 };

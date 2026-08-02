@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useContest } from "../context/ContestContext";
 import { API_BASE_URL } from "../config";
 
+const LAST_SEEN_ANNOUNCEMENT_KEY = "admin_last_seen_announcement_at";
+
 export default function AdminHeader({
   darkMode,
   setDarkMode,
@@ -16,6 +18,11 @@ export default function AdminHeader({
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showContestMenu, setShowContestMenu] = useState(false);
+
+  const [announcements, setAnnouncements] = useState([]);
+  const [lastSeenAnnouncementAt, setLastSeenAnnouncementAt] = useState(() =>
+    localStorage.getItem(LAST_SEEN_ANNOUNCEMENT_KEY)
+  );
 
   const [themeLoading, setThemeLoading] = useState(true);
   const [themeUpdating, setThemeUpdating] = useState(false);
@@ -79,6 +86,63 @@ export default function AdminHeader({
 
     fetchAdmin();
   }, [setDarkMode]);
+
+  useEffect(() => {
+    if (!selectedContestId) {
+      setAnnouncements([]);
+      return;
+    }
+
+    let ignore = false;
+
+    const fetchAnnouncements = async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/admin/overview/announcements?competition_id=${selectedContestId}`,
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to fetch announcements");
+        }
+
+        if (!ignore) setAnnouncements(data.announcements || []);
+      } catch (error) {
+        console.error("Fetch announcements error:", error);
+      }
+    };
+
+    fetchAnnouncements();
+
+    const intervalId = setInterval(fetchAnnouncements, 30000);
+
+    return () => {
+      ignore = true;
+      clearInterval(intervalId);
+    };
+  }, [selectedContestId]);
+
+  const unreadAnnouncementCount = announcements.filter(
+    (a) => !lastSeenAnnouncementAt || new Date(a.created_at) > new Date(lastSeenAnnouncementAt)
+  ).length;
+
+  const handleToggleNotifs = () => {
+    const opening = !showNotifs;
+    setShowNotifs(opening);
+    setShowProfileMenu(false);
+    setShowContestMenu(false);
+
+    if (opening && announcements.length > 0) {
+      const latest = announcements[0].created_at;
+      localStorage.setItem(LAST_SEEN_ANNOUNCEMENT_KEY, latest);
+      setLastSeenAnnouncementAt(latest);
+    }
+  };
 
   const getInitials = (name) => {
     if (!name) return "--";
@@ -442,11 +506,7 @@ export default function AdminHeader({
         <div className="relative">
           <button
             type="button"
-            onClick={() => {
-              setShowNotifs(!showNotifs);
-              setShowProfileMenu(false);
-              setShowContestMenu(false);
-            }}
+            onClick={handleToggleNotifs}
             className={`relative w-8 h-8 rounded-[8px] flex items-center justify-center border transition-colors ${
               darkMode
                 ? "border-neutral-800 hover:bg-neutral-800"
@@ -457,9 +517,11 @@ export default function AdminHeader({
               <path d="M8 2a4 4 0 0 0-4 4v3l-1.5 2h11L12 9V6a4 4 0 0 0-4-4Z" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" strokeLinejoin="round" />
               <path d="M6.5 13a1.5 1.5 0 0 0 3 0" stroke={darkMode ? "#A3A3A3" : "#5F6368"} strokeWidth="1.4" />
             </svg>
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white bg-[#EA4335] font-['Roboto']">
-              3
-            </span>
+            {unreadAnnouncementCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white bg-[#EA4335] font-['Roboto']">
+                {unreadAnnouncementCount > 9 ? "9+" : unreadAnnouncementCount}
+              </span>
+            )}
           </button>
 
           {showNotifs && (
@@ -469,31 +531,26 @@ export default function AdminHeader({
               }`}
             >
               <div className={`px-4 py-3 border-b font-bold text-[14px] ${darkMode ? "border-neutral-800 text-white" : "border-[#F1F3F4] text-[#1C1B1F]"}`}>
-                Recent Alerts
+                Recent Announcements
               </div>
-              <div className="flex flex-col">
-                <div className={`px-4 py-3 border-b text-[13px] ${darkMode ? "border-neutral-800 hover:bg-neutral-800" : "border-[#F1F3F4] hover:bg-[#F8F9FA]"}`}>
-                  <strong className={darkMode ? "text-blue-400" : "text-[#3A7CF5]"}>System</strong>
-                  <p className={`mt-0.5 ${darkMode ? "text-neutral-300" : "text-[#5F6368]"}`}>
-                    Judge0 cluster #2 connected successfully.
-                  </p>
-                </div>
-                <div className={`px-4 py-3 border-b text-[13px] ${darkMode ? "border-neutral-800 hover:bg-neutral-800" : "border-[#F1F3F4] hover:bg-[#F8F9FA]"}`}>
-                  <strong className={darkMode ? "text-orange-400" : "text-[#E65100]"}>Warning</strong>
-                  <p className={`mt-0.5 ${darkMode ? "text-neutral-300" : "text-[#5F6368]"}`}>
-                    Team Byte_Me requested clarification on Problem C.
-                  </p>
-                </div>
-                <div className={`px-4 py-3 text-[13px] ${darkMode ? "hover:bg-neutral-800" : "hover:bg-[#F8F9FA]"}`}>
-                  <strong className={darkMode ? "text-emerald-400" : "text-[#2E7D32]"}>Contest</strong>
-                  <p className={`mt-0.5 ${darkMode ? "text-neutral-300" : "text-[#5F6368]"}`}>
-                    {competitionStatus === "before"
-                      ? `Starts in: ${remainingTime}`
-                      : competitionStatus === "live"
-                        ? `Time left: ${remainingTime}`
-                        : "No active competition"}
-                  </p>
-                </div>
+              <div className="flex flex-col max-h-[320px] overflow-y-auto">
+                {announcements.length === 0 ? (
+                  <div className={`px-4 py-4 text-[13px] ${darkMode ? "text-neutral-500" : "text-[#9AA0A6]"}`}>
+                    No announcements published yet.
+                  </div>
+                ) : (
+                  announcements.slice(0, 5).map((a) => (
+                    <div
+                      key={a.announcement_id}
+                      className={`px-4 py-3 border-b text-[13px] last:border-b-0 ${darkMode ? "border-neutral-800 hover:bg-neutral-800" : "border-[#F1F3F4] hover:bg-[#F8F9FA]"}`}
+                    >
+                      <strong className={darkMode ? "text-blue-400" : "text-[#3A7CF5]"}>{a.title}</strong>
+                      <p className={`mt-0.5 line-clamp-2 ${darkMode ? "text-neutral-300" : "text-[#5F6368]"}`}>
+                        {a.message}
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
