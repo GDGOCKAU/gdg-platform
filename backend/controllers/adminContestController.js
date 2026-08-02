@@ -473,6 +473,41 @@ const updateCompetition = async (req, res) => {
   }
 };
 
+// DELETE /api/admin/contests/:id
+// Only succeeds for a competition with no real activity yet — teams/problems
+// cascade-delete, but a team or problem that already has submissions is
+// protected by ON DELETE RESTRICT further down the chain, so Postgres itself
+// refuses the delete (surfaced below as 23503) once a contest actually ran.
+const deleteCompetition = async (req, res) => {
+  try {
+    const competitionId = Number(req.params.id);
+
+    if (!competitionId) {
+      return res.status(400).json({ message: "Invalid competition id" });
+    }
+
+    const result = await pool.query(
+      `DELETE FROM competitions WHERE competition_id = $1 RETURNING competition_id`,
+      [competitionId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Competition not found" });
+    }
+
+    return res.status(200).json({ message: "Competition deleted successfully" });
+  } catch (error) {
+    if (error.code === "23503") {
+      return res.status(409).json({
+        message: "Cannot delete: this competition already has teams or problems with submissions linked to it",
+      });
+    }
+
+    console.error("Delete competition error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // GET /api/admin/contests/history
 // Finished competitions, each with how many teams took part and who won.
 const getCompetitionHistory = async (req, res) => {
@@ -542,13 +577,13 @@ const getCompetitionLeaderboard = async (req, res) => {
       return res.status(400).json({ message: "Invalid competition id" });
     }
 
-    const leaderboard = await buildLeaderboard(competitionId);
+    const result = await buildLeaderboard(competitionId);
 
-    if (leaderboard === null) {
+    if (result === null) {
       return res.status(404).json({ message: "Competition not found" });
     }
 
-    return res.status(200).json({ leaderboard });
+    return res.status(200).json(result);
   } catch (error) {
     console.error("Get competition leaderboard error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -723,6 +758,7 @@ module.exports = {
   createCompetition,
   getCompetitionById,
   updateCompetition,
+  deleteCompetition,
   getCompetitionHistory,
   getCompetitionLeaderboard,
   downloadTeamSubmissionsZip,

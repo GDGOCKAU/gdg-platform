@@ -50,14 +50,6 @@ const leaderboardTrigger = async (teamId, problemId) => {
 
         );
 
-        await recalculateRanks(
-            competitionId
-        );
-
-        await storeLeaderboard(
-            competitionId
-        );
-
     }
 
     catch (error) {
@@ -218,88 +210,6 @@ const assignPoints = async (teamId,competitionId,pointsAssigned) => {
 
 };
 
-//after changing the points by adding to the balance, this method recalculates the ranks
-const recalculateRanks = async (competitionId) => {
-
-    const leaderboardResult =
-        await pool.query(
-
-            `
-            SELECT
-
-                leaderboard.team_id,
-
-                leaderboard.points,
-
-                leaderboard.solved_questions
-
-            FROM leaderboard
-
-            WHERE
-
-                leaderboard.competition_id = $1
-
-            ORDER BY
-
-                leaderboard.points DESC,
-
-                leaderboard.solved_questions DESC
-            `,
-
-            [
-
-                competitionId
-
-            ]
-
-        );
-
-    return leaderboardResult.rows;
-
-};
-
-//stores the re-ranking into the leaderboard teble inside the DB 
-const storeLeaderboard = async (competitionId) => {
-
-    const leaderboardResult =
-        await pool.query(
-
-            `
-            SELECT
-
-                leaderboard.team_id,
-
-                leaderboard.competition_id,
-
-                leaderboard.points,
-
-                leaderboard.solved_questions
-
-            FROM leaderboard
-
-            WHERE
-
-                leaderboard.competition_id = $1
-
-            ORDER BY
-
-                leaderboard.points DESC,
-
-                leaderboard.solved_questions DESC
-            `,
-
-            [
-
-                competitionId
-
-            ]
-
-        );
-
-    return leaderboardResult.rows;
-
-};
-
 //formats a millisecond offset as "+NN min" for a single accepted problem
 const formatOffset = (ms) => {
     const totalMinutes = Math.max(0, Math.floor(ms / 60000));
@@ -315,12 +225,18 @@ const formatDuration = (ms) => {
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 };
 
+// How long before a competition ends the scoreboard freezes. Standings stop
+// reflecting new Accepted verdicts during this window (they're still judged
+// and scored internally) and reveal in full once the contest ends — this is
+// the standard ICPC-style "final freeze" to keep the last stretch tense.
+const FREEZE_WINDOW_MS = 15 * 60 * 1000;
+
 //builds the ranked leaderboard payload for a competition — shared by the
 //participant-facing route and the admin contest archive.
 const buildLeaderboard = async (competitionId) => {
 
         const competitionResult = await pool.query(
-            `SELECT started_at FROM competitions WHERE competition_id = $1`,
+            `SELECT started_at, ended_at, status FROM competitions WHERE competition_id = $1`,
             [competitionId]
         );
 
@@ -328,67 +244,28 @@ const buildLeaderboard = async (competitionId) => {
             return null;
         }
 
-        const contestStartedAt = competitionResult.rows[0].started_at;
+        const { started_at: contestStartedAt, ended_at: contestEndedAt, status } = competitionResult.rows[0];
+
+        const freezeStartsAt = new Date(new Date(contestEndedAt).getTime() - FREEZE_WINDOW_MS);
+        const now = new Date();
+
+        // 'Frozen' can also be set manually by an admin (e.g. an early freeze);
+        // in that case the standings still lock at the same last-15-minutes
+        // cutoff rather than at whatever moment the status was flipped, since
+        // we don't track a separate "frozen at" timestamp.
+        const isFrozen =
+            status === "Frozen" ||
+            (status === "Active" && now >= freezeStartsAt && now < new Date(contestEndedAt));
+
+        const cutoff = isFrozen ? freezeStartsAt : null;
 
         const problemsResult = await pool.query(
-            `SELECT problem_id, problem_code
+            `SELECT problem_id, problem_code, points_assigned
              FROM problems
              WHERE competition_id = $1
              ORDER BY problem_code`,
             [competitionId]
         );
-
-        const leaderboardResult =
-            await pool.query(
-
-                `
-                SELECT
-
-                    ROW_NUMBER() OVER(
-
-                        PARTITION BY leaderboard.competition_id
-
-                        ORDER BY
-
-                            leaderboard.points DESC,
-
-                            leaderboard.solved_questions DESC
-
-                    ) AS rank,
-
-                    team.team_id,
-
-                    team.team_name,
-
-                    leaderboard.points,
-
-                    leaderboard.solved_questions
-
-                FROM leaderboard
-
-                INNER JOIN teams team
-
-                    ON leaderboard.team_id =
-                    team.team_id
-
-                WHERE
-
-                    leaderboard.competition_id = $1
-
-                ORDER BY
-
-                    leaderboard.points DESC,
-
-                    leaderboard.solved_questions DESC
-                `,
-
-                [
-
-                    competitionId
-
-                ]
-
-            );
 
         const problemIds = problemsResult.rows.map((p) => p.problem_id);
 
@@ -399,13 +276,19 @@ const buildLeaderboard = async (competitionId) => {
                 SELECT
                     team_id,
                     problem_id,
-                    MIN(submitted_at) FILTER (WHERE status = 'Accepted') AS accepted_at,
-                    COUNT(*) FILTER (WHERE status NOT IN ('Queued', 'Judging')) AS attempt_count
+                    MIN(submitted_at) FILTER (
+                        WHERE status = 'Accepted'
+                          AND ($2::timestamptz IS NULL OR submitted_at <= $2)
+                    ) AS accepted_at,
+                    COUNT(*) FILTER (
+                        WHERE status NOT IN ('Queued', 'Judging')
+                          AND ($2::timestamptz IS NULL OR submitted_at <= $2)
+                    ) AS attempt_count
                 FROM submissions
                 WHERE problem_id = ANY($1::int[])
                 GROUP BY team_id, problem_id
                 `,
-                [problemIds]
+                [problemIds, cutoff]
             );
 
         const submissionsByTeam = new Map();
@@ -416,8 +299,19 @@ const buildLeaderboard = async (competitionId) => {
             submissionsByTeam.get(row.team_id).set(row.problem_id, row);
         }
 
-        const leaderboard = leaderboardResult.rows.map((team) => {
+        // Points/solved counts are recomputed directly from submissions (rather
+        // than read off the live-updated `leaderboard` table) so the same
+        // cutoff can be applied consistently to rank, score, and the per-problem
+        // cells during a freeze.
+        const teamsResult = await pool.query(
+            `SELECT team_id, team_name FROM teams WHERE competition_id = $1 AND is_disqualified = FALSE`,
+            [competitionId]
+        );
+
+        const scored = teamsResult.rows.map((team) => {
             const teamSubmissions = submissionsByTeam.get(team.team_id);
+            let points = 0;
+            let solvedQuestions = 0;
             let totalTimeMs = 0;
 
             const problems = problemsResult.rows.map((problem) => {
@@ -430,6 +324,8 @@ const buildLeaderboard = async (competitionId) => {
                 if (submission.accepted_at) {
                     const offsetMs = new Date(submission.accepted_at) - new Date(contestStartedAt);
                     totalTimeMs += offsetMs;
+                    solvedQuestions += 1;
+                    points += Number(problem.points_assigned) || 0;
                     return {
                         problem_code: problem.problem_code,
                         state: "accepted",
@@ -445,17 +341,27 @@ const buildLeaderboard = async (competitionId) => {
             });
 
             return {
-                rank: Number(team.rank),
                 team_id: team.team_id,
                 team_name: team.team_name,
-                points: team.points,
-                solved_questions: team.solved_questions,
+                points,
+                solved_questions: solvedQuestions,
                 total_time: formatDuration(totalTimeMs),
                 problems,
             };
         });
 
-        return leaderboard;
+        scored.sort((a, b) => b.points - a.points || b.solved_questions - a.solved_questions);
+
+        const leaderboard = scored.map((team, index) => ({
+            rank: index + 1,
+            ...team,
+        }));
+
+        return {
+            leaderboard,
+            is_frozen: isFrozen,
+            freeze_ends_at: isFrozen ? contestEndedAt : null,
+        };
 
 };
 
@@ -500,9 +406,7 @@ module.exports = {
     leaderboardTrigger,
     getProblemPoints,
     assignPoints,
-    recalculateRanks,
     buildLeaderboard,
-    storeLeaderboard,
     getLeaderboard
 
 };

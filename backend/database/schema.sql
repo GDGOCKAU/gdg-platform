@@ -54,6 +54,8 @@ CREATE TABLE teams (
 
     last_seen_at        TIMESTAMP WITH TIME ZONE,
 
+    is_disqualified     BOOLEAN NOT NULL DEFAULT FALSE,
+
     created_at          TIMESTAMP WITH TIME ZONE
                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

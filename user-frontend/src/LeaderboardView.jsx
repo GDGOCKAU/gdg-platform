@@ -107,6 +107,7 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [isFrozen, setIsFrozen] = useState(false);
 
   useEffect(() => {
     if (!user?.competition_id) return;
@@ -117,7 +118,8 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
           withCredentials: true,
         })
         .then((response) => {
-          setTeams(response.data);
+          setTeams(response.data.leaderboard || []);
+          setIsFrozen(Boolean(response.data.is_frozen));
           setLastUpdated(new Date());
           setLoading(false);
         })
@@ -178,15 +180,24 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
             <h1 style={{ fontFamily: "'DM Sans', sans-serif", color: textColor }} className="text-[32px] font-bold tracking-[-0.5px]">
               Live Leaderboard
             </h1>
-            <div className="flex items-center gap-2">
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: "#34A853", boxShadow: "0 0 0 0 #34A853", animation: "livePulse 1.6s ease-out infinite" }}
-              />
-              <span className="text-[13px]" style={{ color: subTextColor, fontFamily: "'Roboto', sans-serif" }}>
-                Live · Auto-updates every 30 seconds
-              </span>
-            </div>
+            {isFrozen ? (
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: "#FBBC04" }} />
+                <span className="text-[13px] font-semibold" style={{ color: "#E65100", fontFamily: "'Roboto', sans-serif" }}>
+                  Frozen · Final standings reveal when the contest ends
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: "#34A853", boxShadow: "0 0 0 0 #34A853", animation: "livePulse 1.6s ease-out infinite" }}
+                />
+                <span className="text-[13px]" style={{ color: subTextColor, fontFamily: "'Roboto', sans-serif" }}>
+                  Live · Auto-updates every 30 seconds
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 px-4 py-2 rounded-[10px]" style={{ backgroundColor: darkMode ? "#1A2E4B" : "#E8F0FE", border: `1px solid ${darkMode ? "#2B4C7E" : "#C5D9FB"}` }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -197,6 +208,30 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
             <span className="text-[13px] font-semibold text-[#3A7CF5]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{totalTeams} team{totalTeams === 1 ? "" : "s"} competing</span>
           </div>
         </div>
+
+        {isFrozen && (
+          <div
+            className="flex items-center gap-3 px-5 py-3.5 rounded-[14px] flex-shrink-0"
+            style={{
+              backgroundColor: darkMode ? "#332200" : "#FFF8E1",
+              border: `1.5px solid ${darkMode ? "#5C4500" : "#FFE082"}`,
+            }}
+          >
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ backgroundColor: darkMode ? "#4A3600" : "#FFECB3" }}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 2v14M9 2 5.5 5M9 2l3.5 3M9 16l-3.5-3M9 16l3.5-3M2 9h14M2 9l3-3.5M2 9l3 3.5M16 9l-3-3.5M16 9l-3 3.5" stroke="#F9A825" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[14px] font-bold" style={{ color: darkMode ? "#FFE082" : "#8D5A00", fontFamily: "'DM Sans', sans-serif" }}>
+                🏆 Scoreboard frozen for the final 15 minutes!
+              </span>
+              <span className="text-[12px]" style={{ color: darkMode ? "#D8C088" : "#8D6E00", fontFamily: "'Roboto', sans-serif" }}>
+                Rankings are locked in — every last-minute submission still counts, but you'll only see who really won once the contest ends. Good luck!
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Overview Cards */}
         <div className="grid grid-cols-3 gap-5 flex-shrink-0">

@@ -4,6 +4,7 @@ const {
   createCompetition,
   getCompetitionById,
   updateCompetition,
+  deleteCompetition,
   getCompetitionHistory,
   getCompetitionLeaderboard,
   downloadTeamSubmissionsZip,
@@ -21,6 +22,7 @@ router.get("/history", adminAuthMiddleware, requireAdmin, getCompetitionHistory)
 
 router.get("/:id", adminAuthMiddleware, requireAdmin, getCompetitionById);
 router.patch("/:id", adminAuthMiddleware, requireAdmin, updateCompetition);
+router.delete("/:id", adminAuthMiddleware, requireAdmin, deleteCompetition);
 
 router.get("/:id/leaderboard", adminAuthMiddleware, requireAdmin, getCompetitionLeaderboard);
 router.get("/:id/submissions.zip", adminAuthMiddleware, requireAdmin, downloadAllSubmissionsZip);

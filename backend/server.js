@@ -94,7 +94,6 @@ const adminTeamRoutes = require("./routes/adminTeamRoutes");
 const adminSettingsRoutes = require("./routes/adminSettingsRoutes");
 const adminContestRoutes = require("./routes/adminContestRoutes");
 const adminProblemRoutes = require("./routes/adminProblemRoutes");
-const adminCompetitionRoutes = require("./routes/adminCompetitionRoutes");
 // =======================================================
 // ===================== API Routes =======================
 // =======================================================
@@ -112,10 +111,12 @@ app.use("/api/admin/teams", adminTeamRoutes);
 app.use("/api/admin/settings", adminSettingsRoutes);
 app.use("/api/admin/contests", adminContestRoutes);
 app.use("/api/admin/problems", adminProblemRoutes);
-app.use("/api/admin/competitions", adminCompetitionRoutes);
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+
+  const { recoverStuckSubmissions } = require("./services/judgeWorker");
+  recoverStuckSubmissions();
 });

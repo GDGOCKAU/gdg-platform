@@ -126,6 +126,127 @@ const getCurrentAdmin = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword?.trim() || !newPassword?.trim()) {
+      return res.status(400).json({
+        message: "Current password and new password are required",
+      });
+    }
+
+    if (newPassword.trim().length < 6) {
+      return res.status(400).json({
+        message: "New password must be at least 6 characters",
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT user_id, password FROM users WHERE user_id = $1`,
+      [req.user.user_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "Admin user not found",
+      });
+    }
+
+    const isCurrentPasswordCorrect = await bcrypt.compare(
+      currentPassword,
+      result.rows[0].password
+    );
+
+    if (!isCurrentPasswordCorrect) {
+      return res.status(401).json({
+        message: "Current password is incorrect",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), 12);
+
+    await pool.query(
+      `UPDATE users SET password = $1 WHERE user_id = $2`,
+      [hashedPassword, req.user.user_id]
+    );
+
+    return res.status(200).json({
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("Change admin password error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+const getAdmins = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT user_id, user_name, role, theme FROM users ORDER BY user_name`
+    );
+
+    return res.status(200).json({
+      admins: result.rows,
+    });
+  } catch (error) {
+    console.error("Get admins error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+const createAdmin = async (req, res) => {
+  try {
+    const { user_name, password } = req.body;
+
+    if (!user_name?.trim() || !password?.trim()) {
+      return res.status(400).json({
+        message: "Username and password are required",
+      });
+    }
+
+    if (password.trim().length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password.trim(), 12);
+
+    const result = await pool.query(
+      `
+        INSERT INTO users (user_name, password, role, theme)
+        VALUES ($1, $2, 'Admin', 'Light')
+        RETURNING user_id, user_name, role, theme
+      `,
+      [user_name.trim(), hashedPassword]
+    );
+
+    return res.status(201).json({
+      message: "Admin account created successfully",
+      admin: result.rows[0],
+    });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({
+        message: "An admin with this username already exists",
+      });
+    }
+
+    console.error("Create admin error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
 const logoutAdmin = (req, res) => {
   res.clearCookie("admin_token", {
     httpOnly: true,
@@ -144,5 +265,8 @@ const logoutAdmin = (req, res) => {
 module.exports = {
   loginAdmin,
   getCurrentAdmin,
+  changePassword,
+  getAdmins,
+  createAdmin,
   logoutAdmin,
 };

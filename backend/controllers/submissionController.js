@@ -1,8 +1,7 @@
 const pool = require("../config/database.js");
 const { judgeSubmission } = require("../services/judgeWorker");
-const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-const { createSubmissionBatch, getSubmissionBatch } = require("../services/judge0Service");
+const { createSubmissionBatch } = require("../services/judge0Service");
 
 const createSubmission = async (req, res) => {
   try {
@@ -24,6 +23,17 @@ const createSubmission = async (req, res) => {
       return res.status(400).json({
         message:
           "problemId, languageId, languageName, and sourceCode are required",
+      });
+    }
+
+    const teamResult = await pool.query(
+      `SELECT is_disqualified FROM teams WHERE team_id = $1`,
+      [teamId]
+    );
+
+    if (teamResult.rows[0]?.is_disqualified) {
+      return res.status(403).json({
+        message: "Your team has been disqualified from this competition.",
       });
     }
 
@@ -50,7 +60,7 @@ const createSubmission = async (req, res) => {
         message: "Problem not found in your competition",
       });
     }
-    
+
 
     const testCasesResult = await pool.query(
       `
@@ -96,58 +106,72 @@ const createSubmission = async (req, res) => {
     }
     const testCases = testCasesResult.rows;
 
-    const client = await pool.connect();
+    let submissionId;
 
-    try {
-      await client.query("BEGIN");
+    {
+      const client = await pool.connect();
 
-      const submissionResult = await client.query(
-        `
-          INSERT INTO submissions (
-            team_id,
-            problem_id,
-            status,
-            language_id,
-            language_name,
-            source_code,
-            total_testcases
-          )
-          VALUES ($1, $2, 'Queued', $3, $4, $5, $6)
-          RETURNING submission_id
-        `,
-        [
-          teamId,
-          problemId,
-          languageId,
-          languageName.trim(),
-          sourceCode.trim(),
-          testCases.length,
-        ]
-      );
+      try {
+        await client.query("BEGIN");
 
-      const submissionId = submissionResult.rows[0].submission_id;
-
-      for (const testCase of testCases) {
-        await client.query(
+        const submissionResult = await client.query(
           `
-            INSERT INTO submission_test_results (
-              submission_id,
+            INSERT INTO submissions (
+              team_id,
               problem_id,
-              test_id,
-              status
+              status,
+              language_id,
+              language_name,
+              source_code,
+              total_testcases
             )
-            VALUES ($1, $2, $3, 'Queued')
+            VALUES ($1, $2, 'Queued', $3, $4, $5, $6)
+            RETURNING submission_id
           `,
           [
-            submissionId,
+            teamId,
             problemId,
-            testCase.test_id,
+            languageId,
+            languageName.trim(),
+            sourceCode.trim(),
+            testCases.length,
           ]
         );
+
+        submissionId = submissionResult.rows[0].submission_id;
+
+        for (const testCase of testCases) {
+          await client.query(
+            `
+              INSERT INTO submission_test_results (
+                submission_id,
+                problem_id,
+                test_id,
+                status
+              )
+              VALUES ($1, $2, $3, 'Queued')
+            `,
+            [
+              submissionId,
+              problemId,
+              testCase.test_id,
+            ]
+          );
+        }
+
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
       }
+    }
 
-      await client.query("COMMIT");
-
+    // The submission row now exists as 'Queued'. If dispatching to Judge0
+    // fails from here on (network blip, Judge0 down), fail the submission
+    // cleanly instead of leaving it silently stuck at 'Queued' forever.
+    try {
       const judgeSubmissions = await createSubmissionBatch({
         sourceCode: sourceCode.trim(),
         languageId,
@@ -204,104 +228,61 @@ const createSubmission = async (req, res) => {
       } finally {
         tokenClient.release();
       }
-
-      judgeSubmission(submissionId).catch((error) => {
-        console.error(
-          `Background judging failed for submission ${submissionId}:`,
-          error
-        );
-      });
-
-      let judgeResults = [];
-      const maximumAttempts = 10;
-      const pollingDelay = 1000;
-
-      for (let attempt = 1; attempt <= maximumAttempts; attempt++) {
-        await sleep(pollingDelay);
-
-        judgeResults = await getSubmissionBatch(tokens);
-
-        const allFinished = judgeResults.every(
-          (result) => result.status?.id !== 1 && result.status?.id !== 2
-        );
-
-        if (allFinished) {
-          break;
-        }
-      }
-
-      const stillProcessing = judgeResults.some(
-        (result) => result.status?.id === 1 || result.status?.id === 2
+    } catch (dispatchError) {
+      console.error(
+        `Judge0 dispatch failed for submission ${submissionId}:`,
+        dispatchError
       );
 
-      if (stillProcessing) {
-        return res.status(202).json({
-          message: "Submission is still being judged",
+      await pool.query(
+        `
+          UPDATE submissions
+          SET
+            status = 'Internal Error',
+            error_message = $2,
+            judged_at = CURRENT_TIMESTAMP
+          WHERE submission_id = $1
+        `,
+        [
           submissionId,
-          status: "Judging",
-        });
-      }
+          "Judge0 is currently unavailable. Please try submitting again.",
+        ]
+      );
 
-      const normalizeOutput = (output) =>
-      String(output ?? "")
-        .replace(/\r\n/g, "\n")
-        .trim();
+      await pool.query(
+        `
+          UPDATE submission_test_results
+          SET
+            status = 'Internal Error',
+            judge_message = 'Judge0 is currently unavailable.',
+            completed_at = CURRENT_TIMESTAMP
+          WHERE submission_id = $1
+        `,
+        [submissionId]
+      );
 
-      const processedResults = judgeResults.map((judgeResult, index) => {
-      const testCase = testCases[index];
-      const judgeStatusId = judgeResult.status?.id;
+      return res.status(503).json({
+        message: "The judge is temporarily unavailable. Your submission was not evaluated — please try again in a moment.",
+        submissionId,
+      });
+    }
 
-      let platformStatus;
-
-      if (judgeStatusId === 3) {
-        platformStatus =
-          normalizeOutput(judgeResult.stdout) ===
-          normalizeOutput(testCase.expected_output)
-            ? "Accepted"
-            : "Wrong Answer";
-      } else if (judgeStatusId === 5) {
-        platformStatus = "Time Limit Exceeded";
-      } else if (judgeStatusId === 6) {
-        platformStatus = "Compilation Error";
-      } else if (judgeStatusId >= 7 && judgeStatusId <= 12) {
-        platformStatus = "Runtime Error";
-      } else {
-        platformStatus = "Internal Error";
-      }
-
-      return {
-        testId: testCase.test_id,
-        platformStatus,
-        judgeStatusId,
-        judgeStatusDescription: judgeResult.status?.description,
-        stdout: judgeResult.stdout,
-        stderr: judgeResult.stderr,
-        compileOutput: judgeResult.compile_output,
-        message: judgeResult.message,
-        executionTimeMs:
-          judgeResult.time !== null && judgeResult.time !== undefined
-            ? Number(judgeResult.time) * 1000
-            : null,
-        memoryUsedKb:
-          judgeResult.memory !== null && judgeResult.memory !== undefined
-            ? Number(judgeResult.memory)
-            : null,
-      };
+    // Actual judging (polling Judge0 for results and persisting them) is
+    // handled entirely by the background worker — the HTTP response doesn't
+    // wait on it.
+    judgeSubmission(submissionId).catch((error) => {
+      console.error(
+        `Background judging failed for submission ${submissionId}:`,
+        error
+      );
     });
 
-      return res.status(201).json({
-        message: "Submission sent to Judge0 successfully",
-        submissionId,
-        status: "Judging",
-        totalTestCases: testCases.length,
-      });
-
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
+    return res.status(201).json({
+      message: "Submission sent to Judge0 successfully",
+      submissionId,
+      status: "Judging",
+      totalTestCases: testCases.length,
+    });
   } catch (error) {
     console.error("Create submission error:", error);
 

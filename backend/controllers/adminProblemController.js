@@ -66,16 +66,19 @@ const createProblem = async (req, res) => {
 
   try {
     const {
-      problem_code,     
-      problem_name,     
-      description,      
-      difficulty,       
-      points_assigned,  
-      time_limit,       
+      problem_code,
+      problem_name,
+      description,
+      input_format,
+      output_format,
+      constraints,
+      difficulty,
+      points_assigned,
+      time_limit,
       memory_limit_mb,
       competition_id,
-      is_published,     
-      test_cases,        
+      is_published,
+      test_cases,
     } = req.body;
 
     if (!problem_code || !problem_name || !problem_name.trim() || !description) {
@@ -120,14 +123,14 @@ const createProblem = async (req, res) => {
         problem_code,
         problem_name.trim(),
         description,
-        "",                                   
-        "",                                    
+        input_format?.trim() || "",
+        output_format?.trim() || "",
         memory_limit_mb ? Number(memory_limit_mb) : 256,
         resolvedCompetitionId,
         difficulty,
         secondsToMs(time_limit),
-        null,                                   
-        "Any",                                 
+        constraints?.trim() || null,
+        "Any",
         points_assigned ? Number(points_assigned) : 0,
         Boolean(is_published),
       ]
@@ -180,6 +183,9 @@ const updateProblem = async (req, res) => {
       problem_code,
       problem_name,
       description,
+      input_format,
+      output_format,
+      constraints,
       difficulty,
       points_assigned,
       time_limit,
@@ -197,18 +203,24 @@ const updateProblem = async (req, res) => {
           problem_code = COALESCE($1, problem_code),
           problem_name = COALESCE($2, problem_name),
           description = COALESCE($3, description),
-          difficulty = COALESCE($4, difficulty),
-          points_assigned = COALESCE($5, points_assigned),
-          time_limit = COALESCE($6, time_limit),
-          memory_limit_mb = COALESCE($7, memory_limit_mb),
-          is_published = COALESCE($8, is_published)
-        WHERE problem_id = $9
+          input_format = COALESCE($4, input_format),
+          output_format = COALESCE($5, output_format),
+          constraints = COALESCE($6, constraints),
+          difficulty = COALESCE($7, difficulty),
+          points_assigned = COALESCE($8, points_assigned),
+          time_limit = COALESCE($9, time_limit),
+          memory_limit_mb = COALESCE($10, memory_limit_mb),
+          is_published = COALESCE($11, is_published)
+        WHERE problem_id = $12
         RETURNING *
       `,
       [
         problem_code ?? null,
         problem_name ? problem_name.trim() : null,
         description ?? null,
+        input_format !== undefined ? input_format.trim() : null,
+        output_format !== undefined ? output_format.trim() : null,
+        constraints !== undefined ? constraints.trim() : null,
         difficulty ?? null,
         points_assigned !== undefined ? Number(points_assigned) : null,
         time_limit !== undefined ? secondsToMs(time_limit) : null,

@@ -266,6 +266,99 @@ const getAnnouncements = async (req, res) => {
   }
 };
 
+// PATCH /api/admin/overview/announcements/:id
+// Lets an admin fix a typo or unpublish/republish an announcement after the
+// fact — the create endpoint is otherwise fire-and-forget.
+const updateAnnouncement = async (req, res) => {
+  try {
+    const announcementId = Number(req.params.id);
+
+    if (!announcementId) {
+      return res.status(400).json({ message: "Invalid announcement id" });
+    }
+
+    const { title, message, is_published } = req.body;
+
+    if (title !== undefined && title.trim().length > 100) {
+      return res.status(400).json({
+        message: "Title must not exceed 100 characters",
+      });
+    }
+
+    if (title !== undefined && !title.trim()) {
+      return res.status(400).json({ message: "Title cannot be empty" });
+    }
+
+    if (message !== undefined && !message.trim()) {
+      return res.status(400).json({ message: "Message cannot be empty" });
+    }
+
+    const result = await pool.query(
+      `
+        UPDATE announcements
+        SET
+          title = COALESCE($1, title),
+          message = COALESCE($2, message),
+          is_published = COALESCE($3, is_published),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE announcement_id = $4
+        RETURNING
+          announcement_id,
+          competition_id,
+          created_by,
+          title,
+          message,
+          is_published,
+          created_at,
+          updated_at
+      `,
+      [
+        title !== undefined ? title.trim() : null,
+        message !== undefined ? message.trim() : null,
+        is_published !== undefined ? Boolean(is_published) : null,
+        announcementId,
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Announcement not found" });
+    }
+
+    return res.status(200).json({
+      message: "Announcement updated successfully",
+      announcement: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Update announcement error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// DELETE /api/admin/overview/announcements/:id
+const deleteAnnouncement = async (req, res) => {
+  try {
+    const announcementId = Number(req.params.id);
+
+    if (!announcementId) {
+      return res.status(400).json({ message: "Invalid announcement id" });
+    }
+
+    const result = await pool.query(
+      `DELETE FROM announcements WHERE announcement_id = $1 RETURNING announcement_id`,
+      [announcementId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Announcement not found" });
+    }
+
+    return res.status(200).json({ message: "Announcement deleted successfully" });
+  } catch (error) {
+    console.error("Delete announcement error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const getAvailableCompetitions = async (req, res) => {
   try {
     const result = await pool.query(`
@@ -292,5 +385,5 @@ const getAvailableCompetitions = async (req, res) => {
 };
 
 module.exports = {
-  getAdminOverview, createAnnouncement, getAnnouncements, getAvailableCompetitions,
+  getAdminOverview, createAnnouncement, getAnnouncements, updateAnnouncement, deleteAnnouncement, getAvailableCompetitions,
 };

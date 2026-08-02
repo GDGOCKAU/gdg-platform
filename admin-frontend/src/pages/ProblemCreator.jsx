@@ -245,7 +245,7 @@ function TestCaseBlock({ tc, index, onChange, onRemove, darkMode }) {
 }
 
 // Preview Modal 
-function PreviewModal({ onClose, title, difficulty, points, timeLimit, memLimit, statement, testCases, darkMode }) {
+function PreviewModal({ onClose, title, difficulty, points, timeLimit, memLimit, statement, inputFormat, outputFormat, constraints, testCases, darkMode }) {
   const visibleCases = testCases.filter(tc => tc.visible);
 
   return (
@@ -295,6 +295,30 @@ function PreviewModal({ onClose, title, difficulty, points, timeLimit, memLimit,
               {statement || "No description provided."}
             </p>
           </div>
+
+          {(inputFormat || outputFormat) && (
+            <div className="grid grid-cols-2 gap-6">
+              {inputFormat && (
+                <div className="flex flex-col gap-2">
+                  <h3 className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#3C4043]'}`}>Input Format</h3>
+                  <p className={`text-[13px] leading-relaxed whitespace-pre-wrap font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>{inputFormat}</p>
+                </div>
+              )}
+              {outputFormat && (
+                <div className="flex flex-col gap-2">
+                  <h3 className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#3C4043]'}`}>Output Format</h3>
+                  <p className={`text-[13px] leading-relaxed whitespace-pre-wrap font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>{outputFormat}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {constraints && (
+            <div className="flex flex-col gap-2">
+              <h3 className={`text-[15px] font-bold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#3C4043]'}`}>Constraints</h3>
+              <p className={`text-[13px] leading-relaxed whitespace-pre-wrap font-['JetBrains_Mono'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>{constraints}</p>
+            </div>
+          )}
 
           {/* Visible Test Cases */}
           {visibleCases.length > 0 && (
@@ -346,6 +370,9 @@ export default function ProblemCreator() {
   const [timeLimit, setTimeLimit] = useState("");
   const [memLimit, setMemLimit] = useState("");
   const [statement, setStatement] = useState("");
+  const [inputFormat, setInputFormat] = useState("");
+  const [outputFormat, setOutputFormat] = useState("");
+  const [constraints, setConstraints] = useState("");
   const [letter, setLetter] = useState("A");
   
   // States for buttons
@@ -403,6 +430,9 @@ export default function ProblemCreator() {
         setTimeLimit("");
         setMemLimit("");
         setStatement("");
+        setInputFormat("");
+        setOutputFormat("");
+        setConstraints("");
         setTestCases(BLANK_TEST_CASES);
         return;
       }
@@ -422,6 +452,9 @@ export default function ProblemCreator() {
         setTimeLimit(String(problem.time_limit / 1000)); // ms -> seconds
         setMemLimit(String(problem.memory_limit_mb));
         setStatement(problem.description);
+        setInputFormat(problem.input_format || "");
+        setOutputFormat(problem.output_format || "");
+        setConstraints(problem.constraints || "");
         setTestCases(
           cases.length > 0
             ? cases.map(tc => ({
@@ -458,6 +491,9 @@ export default function ProblemCreator() {
     problem_code: letter,
     problem_name: title.trim(),
     description: statement,
+    input_format: inputFormat,
+    output_format: outputFormat,
+    constraints,
     difficulty,
     points_assigned: points,
     time_limit: timeLimit,       // backend converts seconds -> milliseconds
@@ -692,6 +728,45 @@ export default function ProblemCreator() {
                 <span className={`text-[11px] tabular-nums font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>{statement.length} chars</span>
               </div>
             </div>
+
+            {/* Input / Output format */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <FieldLabel darkMode={darkMode}>Input Format</FieldLabel>
+                <textarea
+                  value={inputFormat}
+                  onChange={e => setInputFormat(e.target.value)}
+                  placeholder={"Describe the shape of the input, e.g.:\nLine 1: integer n\nLine 2: n space-separated integers"}
+                  rows={4}
+                  className={`w-full px-4 py-3 text-[13px] rounded-[8px] outline-none resize-none ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-white text-[#1C1B1F] placeholder-neutral-400'}`}
+                  style={{ fontFamily: "'Roboto', sans-serif", lineHeight: "1.6", border: `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}` }}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <FieldLabel darkMode={darkMode}>Output Format</FieldLabel>
+                <textarea
+                  value={outputFormat}
+                  onChange={e => setOutputFormat(e.target.value)}
+                  placeholder={"Describe what the program should print, e.g.:\nA single integer — the answer."}
+                  rows={4}
+                  className={`w-full px-4 py-3 text-[13px] rounded-[8px] outline-none resize-none ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-white text-[#1C1B1F] placeholder-neutral-400'}`}
+                  style={{ fontFamily: "'Roboto', sans-serif", lineHeight: "1.6", border: `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}` }}
+                />
+              </div>
+            </div>
+
+            {/* Constraints */}
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel darkMode={darkMode}>Constraints</FieldLabel>
+              <textarea
+                value={constraints}
+                onChange={e => setConstraints(e.target.value)}
+                placeholder={"e.g., 1 ≤ n ≤ 10^5\n0 ≤ a[i] ≤ 10^9"}
+                rows={3}
+                className={`w-full px-4 py-3 text-[13px] rounded-[8px] outline-none resize-none ${darkMode ? 'bg-neutral-950 text-white placeholder-neutral-600' : 'bg-white text-[#1C1B1F] placeholder-neutral-400'}`}
+                style={{ fontFamily: "'JetBrains Mono', monospace", lineHeight: "1.6", border: `1.5px solid ${darkMode ? '#404040' : '#E0E0E0'}` }}
+              />
+            </div>
           </div>
 
           {/* ── Right: Judge0 + Test Cases ── */}
@@ -835,6 +910,9 @@ export default function ProblemCreator() {
           timeLimit={timeLimit}
           memLimit={memLimit}
           statement={statement}
+          inputFormat={inputFormat}
+          outputFormat={outputFormat}
+          constraints={constraints}
           testCases={testCases}
           darkMode={darkMode}
         />

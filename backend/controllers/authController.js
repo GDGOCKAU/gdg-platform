@@ -16,7 +16,8 @@ const login = async (req, res) => {
             team_id,
             team_name,
             competition_id,
-            theme
+            theme,
+            is_disqualified
         FROM teams
         WHERE LOWER(team_name) = LOWER($1)
             AND access_code = $2
@@ -35,6 +36,13 @@ const login = async (req, res) => {
     }
 
     const team = result.rows[0];
+
+    if (team.is_disqualified) {
+      return res.status(403).json({
+        message: "This team has been disqualified from the competition.",
+      });
+    }
+
     await pool.query(
       `
         UPDATE teams

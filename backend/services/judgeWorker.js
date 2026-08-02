@@ -314,6 +314,69 @@ const judgeSubmission = async (submissionId) => {
   }
 };
 
+// Runs once at server startup. If the process was previously killed/restarted
+// while submissions were mid-flight, they'd otherwise sit at 'Judging' or
+// 'Queued' forever with nothing left to poll them (judgeSubmission runs
+// in-process and fire-and-forget, so a crash silently drops it).
+const recoverStuckSubmissions = async () => {
+  try {
+    // Already dispatched to Judge0 (has tokens) — just resume polling.
+    const judgingResult = await pool.query(
+      `SELECT submission_id FROM submissions WHERE status = 'Judging'`
+    );
+
+    for (const row of judgingResult.rows) {
+      judgeSubmission(row.submission_id).catch((error) => {
+        console.error(
+          `Startup recovery: failed to resume submission ${row.submission_id}:`,
+          error
+        );
+      });
+    }
+
+    // Never made it to Judge0 (no tokens exist yet) — nothing to resume, so
+    // fail them cleanly instead of leaving the team staring at "Queued"
+    // forever. The 2-minute cutoff avoids racing a submission that is still
+    // legitimately mid-dispatch on this same boot.
+    const staleQueuedResult = await pool.query(
+      `
+        UPDATE submissions
+        SET
+          status = 'Internal Error',
+          error_message = 'Submission was interrupted by a server restart. Please resubmit.',
+          judged_at = CURRENT_TIMESTAMP
+        WHERE status = 'Queued'
+          AND submitted_at < CURRENT_TIMESTAMP - INTERVAL '2 minutes'
+        RETURNING submission_id
+      `
+    );
+
+    if (staleQueuedResult.rows.length > 0) {
+      await pool.query(
+        `
+          UPDATE submission_test_results
+          SET
+            status = 'Internal Error',
+            judge_message = 'Submission was interrupted by a server restart.',
+            completed_at = CURRENT_TIMESTAMP
+          WHERE submission_id = ANY($1::bigint[])
+            AND status = 'Queued'
+        `,
+        [staleQueuedResult.rows.map((row) => row.submission_id)]
+      );
+    }
+
+    if (judgingResult.rows.length > 0 || staleQueuedResult.rows.length > 0) {
+      console.log(
+        `Startup recovery: resumed ${judgingResult.rows.length} judging submission(s), failed ${staleQueuedResult.rows.length} stale queued submission(s).`
+      );
+    }
+  } catch (error) {
+    console.error("Startup submission recovery failed:", error);
+  }
+};
+
 module.exports = {
   judgeSubmission,
+  recoverStuckSubmissions,
 };
