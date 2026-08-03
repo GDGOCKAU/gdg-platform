@@ -139,16 +139,8 @@ export default function Login() {
             {/* Contest info chips */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#34A853] flex-shrink-0" />
-                <span className="text-sm text-[#3C4043]" style={{ fontFamily: "'Roboto', sans-serif" }}>Contest is live</span>
-              </div>
-              <div className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-[#4285F4] flex-shrink-0" />
-                <span className="text-sm text-[#3C4043]" style={{ fontFamily: "'Roboto', sans-serif" }}>Teams registered: 48</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#FBBC04] flex-shrink-0" />
-                <span className="text-sm text-[#3C4043]" style={{ fontFamily: "'Roboto', sans-serif" }}>Duration: 3 hours</span>
+                <span className="text-sm text-[#3C4043]" style={{ fontFamily: "'Roboto', sans-serif" }}>Sign in to see your contest status and time remaining</span>
               </div>
             </div>
 

@@ -35,13 +35,23 @@ function GDGLogo({ darkMode }) {
   );
 }
 
+// Below this many milliseconds remaining, the timer switches to an urgent
+// style so contestants notice the contest is about to end.
+const ENDING_SOON_THRESHOLD_MS = 5 * 60 * 1000;
+
 const Navbar = ({darkMode, setDarkMode,}) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, competition } = useAuth();
+  const { user, competition, logout } = useAuth();
   const [timeLeft, setTimeLeft] = useState("00:00:00");
   const [timerStatus, setTimerStatus] = useState("loading");
+  const [isEndingSoon, setIsEndingSoon] = useState(false);
   const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
 
   const navBg = darkMode
     ? "#1E1E1E"
@@ -96,9 +106,10 @@ const Navbar = ({darkMode, setDarkMode,}) => {
     if (!competition?.started_at || !competition?.ended_at) {
       setTimeLeft("00:00:00");
       setTimerStatus("loading");
+      setIsEndingSoon(false);
       return;
     }
-  
+
     const updateTimer = () => {
       const now = new Date().getTime();
       const startTime = new Date(competition.started_at).getTime();
@@ -109,12 +120,15 @@ const Navbar = ({darkMode, setDarkMode,}) => {
       if (now < startTime) {
         difference = startTime - now;
         setTimerStatus("before");
+        setIsEndingSoon(false);
       } else if (now < endTime) {
         difference = endTime - now;
         setTimerStatus("running");
+        setIsEndingSoon(difference <= ENDING_SOON_THRESHOLD_MS);
       } else {
         setTimeLeft("00:00:00");
         setTimerStatus("finished");
+        setIsEndingSoon(false);
         return;
       }
 
@@ -139,7 +153,9 @@ const Navbar = ({darkMode, setDarkMode,}) => {
     timerStatus === "before"
       ? "Starts in"
       : timerStatus === "running"
-        ? "Time Left"
+        ? isEndingSoon
+          ? "Ending Soon!"
+          : "Time Left"
         : timerStatus === "finished"
           ? "Contest Finished"
           : "Loading";
@@ -150,9 +166,13 @@ const Navbar = ({darkMode, setDarkMode,}) => {
         ? "#102A43"
         : "#E8F0FE"
       : timerStatus === "running"
-        ? darkMode
-          ? "#2A1B0E"
-          : "#FFF3E0"
+        ? isEndingSoon
+          ? darkMode
+            ? "#3A1414"
+            : "#FFEBEE"
+          : darkMode
+            ? "#2A1B0E"
+            : "#FFF3E0"
         : darkMode
           ? "#2A2A2A"
           : "#F1F3F4";
@@ -161,14 +181,18 @@ const Navbar = ({darkMode, setDarkMode,}) => {
     timerStatus === "before"
       ? "#4285F4"
       : timerStatus === "running"
-        ? "#FFB74D"
+        ? isEndingSoon
+          ? "#EA4335"
+          : "#FFB74D"
         : "#9AA0A6";
 
   const timerColor =
     timerStatus === "before"
       ? "#1967D2"
       : timerStatus === "running"
-        ? "#E65100"
+        ? isEndingSoon
+          ? "#C62828"
+          : "#E65100"
         : "#5F6368";
 
   return (
@@ -254,7 +278,7 @@ const Navbar = ({darkMode, setDarkMode,}) => {
         />
 
         <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-[8px]"
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-[8px] ${isEndingSoon ? "animate-pulse" : ""}`}
           style={{
             backgroundColor: timerBackground,
             border: `1px solid ${timerBorder}`,
@@ -312,6 +336,23 @@ const Navbar = ({darkMode, setDarkMode,}) => {
               <path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7Z" stroke="#5F6368" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors duration-150"
+          style={{
+            border: `1px solid ${borderColor}`,
+            backgroundColor: "transparent",
+            cursor: "pointer",
+          }}
+          aria-label="Log out"
+          title="Log out"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 14H3.5A1.5 1.5 0 0 1 2 12.5v-9A1.5 1.5 0 0 1 3.5 2H6" stroke={darkMode ? "#AAAAAA" : "#5F6368"} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M10.5 11 14 8l-3.5-3M14 8H6" stroke={darkMode ? "#AAAAAA" : "#5F6368"} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
     </nav>

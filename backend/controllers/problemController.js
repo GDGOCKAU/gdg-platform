@@ -67,17 +67,26 @@ const getProblemById = async (req, res) => {
         ROW_NUMBER() OVER (
           PARTITION BY p.competition_id
           ORDER BY p.problem_id
-        ) AS problem_order
+        ) AS problem_order,
+
+        CASE
+          WHEN bool_or(s.status = 'Accepted') THEN 'accepted'
+          WHEN bool_or(s.status IS NOT NULL AND s.status NOT IN ('Queued', 'Judging')) THEN 'wrong'
+          ELSE NULL
+        END AS status
 
       FROM problems p
+      LEFT JOIN submissions s
+        ON s.problem_id = p.problem_id AND s.team_id = $2
       WHERE p.competition_id = (
         SELECT competition_id
         FROM problems
         WHERE problem_id = $1
       )
+      GROUP BY p.problem_id
     `;
-    
-    const result = await pool.query(query, [problemId]);
+
+    const result = await pool.query(query, [problemId, req.user.team_id]);
     
     const problem = result.rows.find(
       (row) => Number(row.problem_id) === problemId
@@ -118,6 +127,7 @@ const getProblemById = async (req, res) => {
       points: problem.points,
       time_limit: problem.time_limit,
       constraints: problem.constraints,
+      status: problem.status,
 
       sample_test_cases: testCasesResult.rows,
     });

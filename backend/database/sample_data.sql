@@ -57,7 +57,7 @@ VALUES
         'Active',
         20,
         (CURRENT_TIMESTAMP - INTERVAL '2 hours')::TIMESTAMP,
-        (CURRENT_TIMESTAMP + INTERVAL '3 hours')::TIMESTAMP
+        (CURRENT_TIMESTAMP + INTERVAL '4 hours')::TIMESTAMP
     ),
     (
         'Backend Sprint Contest',

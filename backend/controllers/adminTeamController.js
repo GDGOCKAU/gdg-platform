@@ -90,16 +90,42 @@ const createTeam = async (req, res) => {
       return res.status(409).json({ message: "Access code already in use for this competition" });
     }
 
-    const result = await pool.query(
-      `
-        INSERT INTO teams (team_name, access_code, competition_id)
-        VALUES ($1, $2, $3)
-        RETURNING team_id, team_name, access_code, competition_id, theme, last_seen_at, created_at, is_disqualified
-      `,
-      [team_name.trim(), access_code.trim(), resolvedCompetitionId]
-    );
+    const client = await pool.connect();
 
-    return res.status(201).json({ team: formatTeam(result.rows[0]) });
+    try {
+      await client.query("BEGIN");
+
+      const result = await client.query(
+        `
+          INSERT INTO teams (team_name, access_code, competition_id)
+          VALUES ($1, $2, $3)
+          RETURNING team_id, team_name, access_code, competition_id, theme, last_seen_at, created_at, is_disqualified
+        `,
+        [team_name.trim(), access_code.trim(), resolvedCompetitionId]
+      );
+
+      const team = result.rows[0];
+
+      // assignPoints (fired whenever this team gets an Accepted submission)
+      // only ever UPDATEs an existing leaderboard row -- without seeding one
+      // here up front, the team's first solve would silently fail to score.
+      await client.query(
+        `
+          INSERT INTO leaderboard (team_id, competition_id, solved_questions, points)
+          VALUES ($1, $2, 0, 0)
+        `,
+        [team.team_id, resolvedCompetitionId]
+      );
+
+      await client.query("COMMIT");
+
+      return res.status(201).json({ team: formatTeam(team) });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     if (error.code === "23505") {
       return res.status(409).json({ message: "A team with this name already exists in the competition" });
@@ -176,7 +202,18 @@ const createTeamsBulk = async (req, res) => {
           `,
           [teamName, accessCode, resolvedCompetitionId]
         );
-        created.push(formatTeam(result.rows[0]));
+
+        const team = result.rows[0];
+
+        await pool.query(
+          `
+            INSERT INTO leaderboard (team_id, competition_id, solved_questions, points)
+            VALUES ($1, $2, 0, 0)
+          `,
+          [team.team_id, resolvedCompetitionId]
+        );
+
+        created.push(formatTeam(team));
       } catch (error) {
         if (error.code === "23505") {
           skipped.push({

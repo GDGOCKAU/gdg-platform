@@ -9,6 +9,7 @@
 
 const pool = require("../config/database");
 const { getSubmissionBatch } = require("./judge0Service");
+const { leaderboardTrigger } = require("../controllers/leaderbord");
 
 const sleep = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -60,6 +61,7 @@ const judgeSubmission = async (submissionId) => {
       `
         SELECT
           s.submission_id,
+          s.team_id,
           s.problem_id,
           p.points_assigned
         FROM submissions s
@@ -267,6 +269,41 @@ const judgeSubmission = async (submissionId) => {
     console.log(
       `Submission ${submissionId} judged successfully: ${finalStatus}`
     );
+
+    if (finalStatus === "Accepted") {
+      const teamId = submissionResult.rows[0].team_id;
+      const acceptedProblemId = submissionResult.rows[0].problem_id;
+
+      try {
+        // Only the first Accepted submission for a given team+problem should
+        // award points -- otherwise resubmitting an already-solved problem
+        // would double-count it on the leaderboard.
+        const priorAccepted = await pool.query(
+          `
+            SELECT 1
+            FROM submissions
+            WHERE team_id = $1
+              AND problem_id = $2
+              AND status = 'Accepted'
+              AND submission_id != $3
+            LIMIT 1
+          `,
+          [teamId, acceptedProblemId, submissionId]
+        );
+
+        if (priorAccepted.rows.length === 0) {
+          await leaderboardTrigger(teamId, acceptedProblemId);
+        }
+      } catch (leaderboardError) {
+        // The submission itself already judged and committed correctly --
+        // don't let a leaderboard hiccup turn a correct Accepted verdict
+        // into a false Internal Error.
+        console.error(
+          `Leaderboard update failed for submission ${submissionId}:`,
+          leaderboardError
+        );
+      }
+    }
 
     return {
       submissionId,

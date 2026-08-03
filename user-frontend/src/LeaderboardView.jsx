@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import gdgLogoImg from "./assets/gdg-logo.png";
 import { useAuth } from "./context/AuthContext";
@@ -104,36 +103,86 @@ function ProblemCell({ result, darkMode }) {
 
 export default function LeaderboardView({ darkMode, setDarkMode }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isFrozen, setIsFrozen] = useState(false);
 
   useEffect(() => {
     if (!user?.competition_id) return;
 
-    const fetchLeaderboard = () => {
-      axios
-        .get(`${API_BASE_URL}/api/leaderboard/${user.competition_id}`, {
-          withCredentials: true,
-        })
-        .then((response) => {
-          setTeams(response.data.leaderboard || []);
-          setIsFrozen(Boolean(response.data.is_frozen));
-          setLastUpdated(new Date());
-          setLoading(false);
-        })
-        .catch((error) => {
-          console.error("خطأ في جلب البيانات:", error);
-          setLoading(false);
-        });
+    let cancelled = false;
+
+    // Contests can outlast the participant token. A 401 mid-poll means the
+    // session expired, so drop the user and let ProtectedRoute send them to
+    // the login page rather than leaving stale standings on screen forever.
+    const handleExpiredSession = () => {
+      if (cancelled) return;
+      setUser(null);
+    };
+
+    const fetchLeaderboard = async ({ isPoll = false } = {}) => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/leaderboard/${user.competition_id}`,
+          { credentials: "include" }
+        );
+
+        if (response.status === 401) {
+          handleExpiredSession();
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to fetch leaderboard");
+        }
+
+        if (cancelled) return;
+
+        setTeams(data.leaderboard || []);
+        setIsFrozen(Boolean(data.is_frozen));
+        setLastUpdated(new Date());
+        setError("");
+      } catch (err) {
+        console.error("Fetch leaderboard error:", err);
+
+        // A dropped poll keeps the last good standings on screen instead of
+        // replacing the table with an error every interval.
+        if (cancelled || isPoll) return;
+
+        setError(err.message);
+      } finally {
+        if (!cancelled && !isPoll) setLoading(false);
+      }
+    };
+
+    const poll = () => {
+      // Background tabs don't need fresh standings, and skipping them keeps
+      // idle browsers from querying the database all contest long.
+      if (document.visibilityState !== "visible") return;
+      fetchLeaderboard({ isPoll: true });
     };
 
     fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, 30000);
-    return () => clearInterval(interval);
-  }, [user?.competition_id]);
+
+    const intervalId = setInterval(poll, 30000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [user?.competition_id, setUser]);
 
   const bgStyle = darkMode ? "#121212" : "#F8F9FA";
   const navBg = darkMode ? "#1E1E1E" : "#FFFFFF";
@@ -213,6 +262,20 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
             <span className="text-[13px] font-semibold text-[#3A7CF5]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{totalTeams} team{totalTeams === 1 ? "" : "s"} competing</span>
           </div>
         </div>
+
+        {error && (
+          <div
+            className="px-4 py-3 rounded-[10px] border text-[13px] flex-shrink-0"
+            style={{
+              fontFamily: "'Roboto', sans-serif",
+              backgroundColor: darkMode ? "rgba(234,67,53,0.12)" : "#FFEBEE",
+              borderColor: darkMode ? "rgba(234,67,53,0.4)" : "#FFCDD2",
+              color: darkMode ? "#FF8A80" : "#C62828",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
         {isFrozen && (
           <div

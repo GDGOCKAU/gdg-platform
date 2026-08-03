@@ -292,6 +292,50 @@ const createSubmission = async (req, res) => {
   }
 };
 
+// GET /api/submissions?problem_id=X
+// A team's own past attempts for one problem, most recent first — lets a
+// contestant come back to a problem and see their previous verdicts instead
+// of losing them the moment they navigate away.
+const getSubmissionsForProblem = async (req, res) => {
+  try {
+    const problemId = Number(req.query.problem_id);
+
+    if (!Number.isInteger(problemId)) {
+      return res.status(400).json({
+        message: "problem_id is required",
+      });
+    }
+
+    const result = await pool.query(
+      `
+        SELECT
+          submission_id,
+          status,
+          language_name,
+          passed_testcases,
+          total_testcases,
+          score,
+          submitted_at,
+          judged_at
+        FROM submissions
+        WHERE problem_id = $1
+          AND team_id = $2
+        ORDER BY submitted_at DESC
+        LIMIT 20
+      `,
+      [problemId, req.user.team_id]
+    );
+
+    return res.status(200).json({ submissions: result.rows });
+  } catch (error) {
+    console.error("Get submissions for problem error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
 const getSubmissionById = async (req, res) => {
   try {
     const submissionId = Number(req.params.submissionId);
@@ -370,4 +414,5 @@ const getSubmissionById = async (req, res) => {
 module.exports = {
   createSubmission,
   getSubmissionById,
+  getSubmissionsForProblem,
 };
