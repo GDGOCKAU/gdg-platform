@@ -44,8 +44,24 @@ export function ContestProvider({ children }) {
 
   useEffect(() => {
     fetchCompetitions();
-    const intervalId = setInterval(fetchCompetitions, 30000);
-    return () => clearInterval(intervalId);
+
+    const poll = () => {
+      if (document.visibilityState !== "visible") return;
+      fetchCompetitions();
+    };
+
+    const intervalId = setInterval(poll, 30000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [fetchCompetitions]);
 
   // If the stored/selected contest is no longer among the selectable ones

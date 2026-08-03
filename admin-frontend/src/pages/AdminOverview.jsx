@@ -633,12 +633,12 @@ export default function AdminOverview() {
 
     let ignore = false;
 
-    const fetchOverview = async () => {
+    const fetchOverview = async ({ isPoll = false } = {}) => {
       try {
-        if (!overviewData) {
+        if (!overviewData && !isPoll) {
           setOverviewLoading(true);
         }
-        setOverviewError("");
+        if (!isPoll) setOverviewError("");
 
         const response = await fetch(
           `${API_BASE_URL}/api/admin/overview?competition_id=${selectedContestId}`,
@@ -656,10 +656,16 @@ export default function AdminOverview() {
           );
         }
 
-        if (!ignore) setOverviewData(data);
+        if (!ignore) {
+          setOverviewData(data);
+          setOverviewError("");
+        }
       } catch (error) {
         console.error("Fetch overview error:", error);
-        if (!ignore) setOverviewError(error.message);
+
+        // A dropped poll keeps the last good numbers on screen instead of
+        // replacing the live dashboard with an error banner every 5 seconds.
+        if (!ignore && !isPoll) setOverviewError(error.message);
       } finally {
         if (!ignore) setOverviewLoading(false);
       }
@@ -667,11 +673,23 @@ export default function AdminOverview() {
 
     fetchOverview();
 
-    const intervalId = setInterval(fetchOverview, 5000);
+    const poll = () => {
+      if (document.visibilityState !== "visible") return;
+      fetchOverview({ isPoll: true });
+    };
+
+    const intervalId = setInterval(poll, 5000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       ignore = true;
       clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedContestId]);

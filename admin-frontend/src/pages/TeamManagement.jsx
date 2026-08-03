@@ -306,20 +306,26 @@ export default function TeamManagement() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [searchFocus, setSearchFocus] = useState(false);
 
-  const fetchTeams = async () => {
+  const fetchTeams = async ({ isPoll = false } = {}) => {
     if (!selectedContestId) {
       setTeams([]);
       setLoading(false);
       return;
     }
     try {
-      setLoading(true);
-      setError("");
+      if (!isPoll) {
+        setLoading(true);
+        setError("");
+      }
       const response = await api.get("/teams", { params: { competition_id: selectedContestId } });
       setTeams(response.data.teams);
+      if (isPoll) setError("");
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || "Failed to load teams.");
+
+      // A dropped poll keeps the last good list (and last-seen status) on
+      // screen instead of replacing the table with an error every interval.
+      if (!isPoll) setError(err.response?.data?.message || "Failed to load teams.");
     } finally {
       setLoading(false);
     }
@@ -327,6 +333,27 @@ export default function TeamManagement() {
 
   useEffect(() => {
     fetchTeams();
+
+    // Team status (Active/Inactive/Pending) is derived from last_seen_at, so
+    // it goes stale the moment a team logs in or goes idle -- keep it live
+    // the same way the rest of the admin dashboard does.
+    const poll = () => {
+      if (document.visibilityState !== "visible") return;
+      fetchTeams({ isPoll: true });
+    };
+
+    const intervalId = setInterval(poll, 15000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedContestId]);
 

@@ -154,6 +154,11 @@ function SampleBlock({ label, content, darkMode }) {
 
 const LANGUAGES = ["Python 3", "C++17", "Java 17", "C", "Kotlin"];
 
+// How often the open problem is re-fetched so an admin edit (a newly
+// revealed sample case, a changed time limit, a statement fix) shows up
+// without the contestant having to refresh the page themselves.
+const PROBLEM_POLL_INTERVAL_MS = 15000;
+
 const LANGUAGE_MAP = {
   "Python 3": "python",
   "C++17": "cpp",
@@ -362,9 +367,9 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
   useEffect(() => {
     let cancelled = false;
 
-    const fetchProblem = async () => {
+    const fetchProblem = async ({ isPoll = false } = {}) => {
       try {
-        setProblemError("");
+        if (!isPoll) setProblemError("");
 
         const response = await fetch(
           `${API_BASE_URL}/api/problems/${problemId}`,
@@ -385,22 +390,45 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
         if (!cancelled) setProblem(data);
       } catch (error) {
         console.error("Fetch problem error:", error);
-        if (!cancelled) setProblemError(error.message);
+
+        // A dropped background poll keeps the last good problem data on
+        // screen instead of yanking a mid-edit page into an error state.
+        if (!cancelled && !isPoll) setProblemError(error.message);
       }
     };
 
     setProblem(null);
     fetchProblem();
 
+    // The admin can edit a problem (add a visible sample, change the time
+    // limit, tweak the statement...) while a team already has it open, so
+    // poll instead of relying on a manual refresh to pick that up.
+    const poll = () => {
+      if (document.visibilityState !== "visible") return;
+      fetchProblem({ isPoll: true });
+    };
+
+    const intervalId = setInterval(poll, PROBLEM_POLL_INTERVAL_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       cancelled = true;
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [problemId, setUser]);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async ({ isPoll = false } = {}) => {
     try {
-      setHistoryLoading(true);
-      setHistoryError("");
+      if (!isPoll) {
+        setHistoryLoading(true);
+        setHistoryError("");
+      }
 
       const response = await fetch(
         `${API_BASE_URL}/api/submissions?problem_id=${problemId}`,
@@ -419,9 +447,10 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
       }
 
       setHistory(data.submissions || []);
+      if (isPoll) setHistoryError("");
     } catch (error) {
       console.error("Fetch submission history error:", error);
-      setHistoryError(error.message);
+      if (!isPoll) setHistoryError(error.message);
     } finally {
       setHistoryLoading(false);
     }
@@ -429,6 +458,27 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
 
   useEffect(() => {
     fetchHistory();
+
+    // Picks up a teammate submitting from another device on the same team
+    // account, or a submission that finished judging after this page was
+    // already left open.
+    const poll = () => {
+      if (document.visibilityState !== "visible") return;
+      fetchHistory({ isPoll: true });
+    };
+
+    const intervalId = setInterval(poll, PROBLEM_POLL_INTERVAL_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problemId]);
 

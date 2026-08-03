@@ -84,11 +84,23 @@ export default function AdminHeader({
 
     fetchAnnouncements();
 
-    const intervalId = setInterval(fetchAnnouncements, 30000);
+    const poll = () => {
+      if (document.visibilityState !== "visible") return;
+      fetchAnnouncements();
+    };
+
+    const intervalId = setInterval(poll, 30000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       ignore = true;
       clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [selectedContestId]);
 
