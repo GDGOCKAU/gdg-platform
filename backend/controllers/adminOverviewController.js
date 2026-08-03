@@ -1,4 +1,5 @@
 const pool = require("../config/database");
+const { getScoreboardFreezeState } = require("./leaderbord");
 
 const getAdminOverview = async (req, res) => {
   try {
@@ -516,8 +517,17 @@ const getAvailableCompetitions = async (req, res) => {
       ORDER BY started_at DESC
     `);
 
+    const competitions = result.rows.map((competition) => {
+      if (competition.status !== "Active" && competition.status !== "Frozen") {
+        return { ...competition, is_frozen: competition.status === "Frozen", is_auto_frozen: false };
+      }
+
+      const { isFrozen, isAutoFrozen } = getScoreboardFreezeState(competition);
+      return { ...competition, is_frozen: isFrozen, is_auto_frozen: isAutoFrozen };
+    });
+
     return res.status(200).json({
-      competitions: result.rows,
+      competitions,
     });
   } catch (error) {
     console.error("Get competitions error:", error);

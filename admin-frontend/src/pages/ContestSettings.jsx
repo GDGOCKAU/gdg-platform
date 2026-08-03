@@ -660,6 +660,14 @@ export default function ContestSettings() {
     return darkMode ? "bg-neutral-800 text-neutral-400" : "bg-[#F1F3F4] text-[#5F6368]";
   };
 
+  // The scoreboard also freezes automatically for the last 15 minutes of a
+  // contest (see leaderbord.js) without the admin ever pressing the button —
+  // `status` alone doesn't know that, so fold it in for display purposes.
+  const isManuallyFrozen = activeDetails?.status === "Frozen";
+  const isAutoFrozen = Boolean(activeDetails?.is_auto_frozen) && !isManuallyFrozen;
+  const displayStatus = isAutoFrozen ? "Frozen (Auto)" : activeDetails?.status;
+  const displayStatusStyle = isAutoFrozen ? statusBadgeStyle("Frozen") : statusBadgeStyle(activeDetails?.status);
+
   return (
     <div className="flex flex-col gap-7">
 
@@ -712,8 +720,8 @@ export default function ContestSettings() {
           )}
 
           {activeDetails && !editing && (
-            <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold font-['Roboto'] ${statusBadgeStyle(activeDetails.status)}`}>
-              {activeDetails.status}
+            <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold font-['Roboto'] ${displayStatusStyle}`}>
+              {displayStatus}
             </span>
           )}
         </div>
@@ -839,6 +847,19 @@ export default function ContestSettings() {
                   <p className={`text-[14px] leading-relaxed whitespace-pre-wrap font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>{activeDetails.description}</p>
                 </div>
               )}
+
+              {isAutoFrozen && (
+                <div className={`flex items-start gap-2 px-4 py-2.5 rounded-[10px] border ${darkMode ? 'bg-blue-950/20 border-blue-900/50' : 'bg-[#E8F0FE] border-[#C5D9FB]'}`}>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="flex-shrink-0 mt-0.5">
+                    <circle cx="7" cy="7" r="6" stroke={darkMode ? "#4285F4" : "#1967D2"} strokeWidth="1.3" />
+                    <path d="M7 4v3l2 2" stroke={darkMode ? "#4285F4" : "#1967D2"} strokeWidth="1.3" strokeLinecap="round" />
+                  </svg>
+                  <p className={`text-[12px] leading-snug font-['Roboto'] ${darkMode ? 'text-blue-300' : 'text-[#1967D2]'}`}>
+                    Automatically frozen — this happens on its own for the final 15 minutes of every contest and lifts by itself once it ends.
+                    Click <strong>Freeze Leaderboard</strong> to keep it frozen after that too, e.g. to reveal results at an awards ceremony.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className={`flex items-center justify-between px-7 py-4 border-t ${darkMode ? 'bg-neutral-950/50 border-neutral-800' : 'bg-[#FAFAFA] border-[#F1F3F4]'}`}>
@@ -865,8 +886,8 @@ export default function ContestSettings() {
                       {freezing
                         ? "Updating..."
                         : activeDetails.status === "Frozen"
-                          ? "Unfreeze Scoreboard"
-                          : "Freeze Scoreboard"}
+                          ? "Unfreeze Leaderboard"
+                          : "Freeze Leaderboard"}
                     </button>
                     <button
                       onClick={() => setShowEndConfirm(true)}

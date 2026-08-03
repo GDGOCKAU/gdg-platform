@@ -356,10 +356,148 @@ function AnnouncementModal({
     );
   }
 
+function DeleteAnnouncementModal({ announcement, onConfirm, onCancel, darkMode, deleting, deleteError }) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-[60]" style={{ backgroundColor: "rgba(28,27,31,0.40)", backdropFilter: "blur(2px)" }}>
+      <div className={`rounded-[20px] p-8 flex flex-col gap-6 shadow-2xl ${darkMode ? 'bg-neutral-900 border border-neutral-800' : 'bg-white'}`} style={{ width: "400px" }}>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: darkMode ? 'rgba(234,67,53,0.15)' : '#FFEBEE' }}>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M8 4h6M3 7h16M5 7l1 11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-11" stroke="#EA4335" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M9 11v5M13 11v5" stroke="#EA4335" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </div>
+          <h3 className={`text-[18px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>Delete Announcement?</h3>
+          <p className={`text-[14px] leading-relaxed font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>
+            <strong className={darkMode ? 'text-white' : 'text-[#1C1B1F]'}>{announcement.title}</strong> will be permanently removed and taken down for contestants. This cannot be undone.
+          </p>
+        </div>
+        {deleteError && (
+          <div className={`px-4 py-3 rounded-[8px] border text-[13px] font-['Roboto'] ${darkMode ? "bg-red-950/30 border-red-900/50 text-red-400" : "bg-[#FFEBEE] border-[#FFCDD2] text-[#C62828]"}`}>
+            {deleteError}
+          </div>
+        )}
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={deleting}
+            className={`flex-1 py-2.5 rounded-[10px] text-[14px] font-semibold transition-colors border font-['DM_Sans'] disabled:opacity-60 ${darkMode ? 'border-neutral-700 text-neutral-300 hover:bg-neutral-800' : 'border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting}
+            className="flex-1 py-2.5 rounded-[10px] text-[14px] font-semibold text-white transition-all bg-[#EA4335] hover:bg-[#C62828] font-['DM_Sans'] shadow-[0_2px_6px_rgba(234,67,53,0.30)] disabled:opacity-60"
+          >
+            {deleting ? "Deleting..." : "Yes, Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AnnouncementHistoryModal({ onClose, darkMode, competitionId, competitionName }) {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editMessage, setEditMessage] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const startEditing = (announcement) => {
+    setEditingId(announcement.announcement_id);
+    setEditTitle(announcement.title);
+    setEditMessage(announcement.message);
+    setEditError("");
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditError("");
+  };
+
+  const saveEdit = async (announcementId) => {
+    if (!editTitle.trim() || !editMessage.trim()) {
+      setEditError("Title and message can't be empty.");
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+      setEditError("");
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/admin/overview/announcements/${announcementId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            title: editTitle.trim(),
+            message: editMessage.trim(),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update announcement");
+      }
+
+      setAnnouncements((prev) =>
+        prev.map((a) => (a.announcement_id === announcementId ? data.announcement : a))
+      );
+      setEditingId(null);
+    } catch (err) {
+      console.error("Update announcement error:", err);
+      setEditError(err.message);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      setDeleting(true);
+      setDeleteError("");
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/admin/overview/announcements/${deleteTarget.announcement_id}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete announcement");
+      }
+
+      setAnnouncements((prev) =>
+        prev.filter((a) => a.announcement_id !== deleteTarget.announcement_id)
+      );
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error("Delete announcement error:", err);
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -427,20 +565,98 @@ function AnnouncementHistoryModal({ onClose, darkMode, competitionId, competitio
             <p className={`text-[13px] font-['Roboto'] ${darkMode ? 'text-neutral-400' : 'text-[#5F6368]'}`}>No announcements published yet for this contest.</p>
           )}
 
-          {!loading && !error && announcements.map((a) => (
-            <div key={a.announcement_id} className={`rounded-[12px] border p-4 flex flex-col gap-1.5 ${darkMode ? 'border-neutral-800 bg-neutral-950/40' : 'border-[#E0E0E0] bg-[#F8F9FA]'}`}>
-              <div className="flex items-center justify-between gap-3">
-                <h3 className={`text-[14px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>{a.title}</h3>
-                <span className={`text-[11px] flex-shrink-0 font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
-                  {new Date(a.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
-                </span>
+          {!loading && !error && announcements.map((a) => {
+            const isEditing = editingId === a.announcement_id;
+
+            return (
+              <div key={a.announcement_id} className={`rounded-[12px] border p-4 flex flex-col gap-1.5 ${darkMode ? 'border-neutral-800 bg-neutral-950/40' : 'border-[#E0E0E0] bg-[#F8F9FA]'}`}>
+                {isEditing ? (
+                  <div className="flex flex-col gap-3">
+                    {editError && (
+                      <div className={`px-3 py-2 rounded-[8px] border text-[12px] font-['Roboto'] ${darkMode ? "bg-red-950/30 border-red-900/50 text-red-400" : "bg-[#FFEBEE] border-[#FFCDD2] text-[#C62828]"}`}>
+                        {editError}
+                      </div>
+                    )}
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      maxLength={100}
+                      disabled={savingEdit}
+                      className={`w-full px-3 py-2 text-[14px] font-bold rounded-[8px] outline-none border ${darkMode ? 'bg-neutral-950 border-neutral-700 text-white' : 'bg-white border-[#E0E0E0] text-[#1C1B1F]'}`}
+                    />
+                    <textarea
+                      value={editMessage}
+                      onChange={(e) => setEditMessage(e.target.value)}
+                      rows={3}
+                      disabled={savingEdit}
+                      className={`w-full px-3 py-2 text-[13px] rounded-[8px] outline-none resize-none border ${darkMode ? 'bg-neutral-950 border-neutral-700 text-white' : 'bg-white border-[#E0E0E0] text-[#1C1B1F]'}`}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={cancelEditing}
+                        disabled={savingEdit}
+                        className={`px-4 py-1.5 rounded-[8px] text-[13px] font-semibold border font-['DM_Sans'] disabled:opacity-60 ${darkMode ? 'border-neutral-700 text-neutral-300 hover:bg-neutral-800' : 'border-[#E0E0E0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => saveEdit(a.announcement_id)}
+                        disabled={savingEdit}
+                        className="px-4 py-1.5 rounded-[8px] text-[13px] font-semibold text-white bg-[#3A7CF5] hover:bg-[#2563EB] disabled:opacity-60 font-['DM_Sans']"
+                      >
+                        {savingEdit ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className={`text-[14px] font-bold font-['DM_Sans'] ${darkMode ? 'text-white' : 'text-[#1C1B1F]'}`}>{a.title}</h3>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <span className={`text-[11px] mr-1 font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>
+                          {new Date(a.created_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+                        </span>
+                        <button
+                          onClick={() => startEditing(a)}
+                          title="Edit announcement"
+                          className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-neutral-800' : 'hover:bg-[#E8F0FE]'}`}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M9.5 2.5 11.5 4.5 4.5 11.5H2.5V9.5L9.5 2.5Z" stroke={darkMode ? "#A3A3A3" : "#3A7CF5"} strokeWidth="1.3" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => { setDeleteTarget(a); setDeleteError(""); }}
+                          title="Delete announcement"
+                          className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${darkMode ? 'hover:bg-red-950/40' : 'hover:bg-[#FFEBEE]'}`}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M2.5 4h9M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3.5 4l.7 7h5.6l.7-7" stroke="#EA4335" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <p className={`text-[13px] leading-snug font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>{a.message}</p>
+                    <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>by {a.created_by_name}</span>
+                  </>
+                )}
               </div>
-              <p className={`text-[13px] leading-snug font-['Roboto'] ${darkMode ? 'text-neutral-300' : 'text-[#3C4043]'}`}>{a.message}</p>
-              <span className={`text-[11px] font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>by {a.created_by_name}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
+
+      {deleteTarget && (
+        <DeleteAnnouncementModal
+          announcement={deleteTarget}
+          onConfirm={confirmDelete}
+          onCancel={() => { setDeleteTarget(null); setDeleteError(""); }}
+          darkMode={darkMode}
+          deleting={deleting}
+          deleteError={deleteError}
+        />
+      )}
     </div>
   );
 }

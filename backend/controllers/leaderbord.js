@@ -231,6 +231,21 @@ const formatDuration = (ms) => {
 // the standard ICPC-style "final freeze" to keep the last stretch tense.
 const FREEZE_WINDOW_MS = 15 * 60 * 1000;
 
+// Whether the scoreboard is frozen right now, and why — shared by the
+// leaderboard builder below and by the admin contest endpoints, so the admin
+// UI can show "Frozen (Auto)" during the last-15-minutes window instead of
+// only knowing about a freeze the admin triggered manually.
+const getScoreboardFreezeState = ({ status, ended_at }) => {
+    const freezeStartsAt = new Date(new Date(ended_at).getTime() - FREEZE_WINDOW_MS);
+    const endedAt = new Date(ended_at);
+    const now = new Date();
+
+    const isAutoFrozen = status === "Active" && now >= freezeStartsAt && now < endedAt;
+    const isFrozen = status === "Frozen" || isAutoFrozen;
+
+    return { isFrozen, isAutoFrozen, freezeStartsAt };
+};
+
 //builds the ranked leaderboard payload for a competition — shared by the
 //participant-facing route and the admin contest archive.
 const buildLeaderboard = async (competitionId) => {
@@ -246,16 +261,7 @@ const buildLeaderboard = async (competitionId) => {
 
         const { started_at: contestStartedAt, ended_at: contestEndedAt, status } = competitionResult.rows[0];
 
-        const freezeStartsAt = new Date(new Date(contestEndedAt).getTime() - FREEZE_WINDOW_MS);
-        const now = new Date();
-
-        // 'Frozen' can also be set manually by an admin (e.g. an early freeze);
-        // in that case the standings still lock at the same last-15-minutes
-        // cutoff rather than at whatever moment the status was flipped, since
-        // we don't track a separate "frozen at" timestamp.
-        const isFrozen =
-            status === "Frozen" ||
-            (status === "Active" && now >= freezeStartsAt && now < new Date(contestEndedAt));
+        const { isFrozen, isAutoFrozen, freezeStartsAt } = getScoreboardFreezeState({ status, ended_at: contestEndedAt });
 
         const cutoff = isFrozen ? freezeStartsAt : null;
 
@@ -360,6 +366,7 @@ const buildLeaderboard = async (competitionId) => {
         return {
             leaderboard,
             is_frozen: isFrozen,
+            is_auto_frozen: isAutoFrozen,
             freeze_ends_at: isFrozen ? contestEndedAt : null,
         };
 
@@ -407,6 +414,7 @@ module.exports = {
     getProblemPoints,
     assignPoints,
     buildLeaderboard,
-    getLeaderboard
+    getLeaderboard,
+    getScoreboardFreezeState
 
 };

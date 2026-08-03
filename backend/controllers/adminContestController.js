@@ -1,10 +1,21 @@
 const pool = require("../config/database");
 const archiver = require("archiver");
-const { buildLeaderboard } = require("./leaderbord");
+const { buildLeaderboard, getScoreboardFreezeState } = require("./leaderbord");
 
 const ALLOWED_DIFFICULTIES = ["Easy", "Medium", "Hard", "Mixed"];
 const ALLOWED_STATUSES = ["Upcoming", "Active", "Frozen", "Finished", "Cancelled"];
 const NON_FINISHED_STATUSES = ["Upcoming", "Active", "Frozen"];
+
+// Only "Active"/"Frozen" competitions have a meaningful freeze state; for
+// anything else (Upcoming/Finished/Cancelled) ended_at math doesn't apply.
+const withFreezeState = (competition) => {
+  if (competition.status !== "Active" && competition.status !== "Frozen") {
+    return { ...competition, is_frozen: competition.status === "Frozen", is_auto_frozen: false };
+  }
+
+  const { isFrozen, isAutoFrozen } = getScoreboardFreezeState(competition);
+  return { ...competition, is_frozen: isFrozen, is_auto_frozen: isAutoFrozen };
+};
 
 const createCompetition = async (req, res) => {
   const client = await pool.connect();
@@ -249,7 +260,7 @@ const getCompetitionById = async (req, res) => {
       return res.status(404).json({ message: "Competition not found" });
     }
 
-    return res.status(200).json({ competition: result.rows[0] });
+    return res.status(200).json({ competition: withFreezeState(result.rows[0]) });
   } catch (error) {
     console.error("Get competition by id error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -368,7 +379,16 @@ const updateCompetition = async (req, res) => {
         return res.status(400).json({ message: "Invalid competition status" });
       }
 
-      if (NON_FINISHED_STATUSES.includes(status)) {
+      // Only block this when the competition is newly claiming an
+      // "unfinished" slot (e.g. moving from Finished/Cancelled back into
+      // Upcoming/Active/Frozen). Toggling between two statuses that were
+      // BOTH already unfinished -- Active <-> Frozen on this same contest,
+      // most commonly -- doesn't change how many competitions are
+      // unfinished, so it shouldn't trip this guard.
+      const isClaimingUnfinishedSlot =
+        NON_FINISHED_STATUSES.includes(status) && !NON_FINISHED_STATUSES.includes(existing.status);
+
+      if (isClaimingUnfinishedSlot) {
         const conflictingResult = await client.query(
           `
             SELECT competition_id FROM competitions
@@ -453,7 +473,7 @@ const updateCompetition = async (req, res) => {
 
     return res.status(200).json({
       message: "Competition updated successfully",
-      competition: result.rows[0],
+      competition: withFreezeState(result.rows[0]),
     });
   } catch (error) {
     await client.query("ROLLBACK");

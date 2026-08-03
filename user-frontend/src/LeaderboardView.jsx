@@ -277,30 +277,6 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
           </div>
         )}
 
-        {isFrozen && (
-          <div
-            className="flex items-center gap-3 px-5 py-3.5 rounded-[14px] flex-shrink-0"
-            style={{
-              backgroundColor: darkMode ? "#332200" : "#FFF8E1",
-              border: `1.5px solid ${darkMode ? "#5C4500" : "#FFE082"}`,
-            }}
-          >
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ backgroundColor: darkMode ? "#4A3600" : "#FFECB3" }}>
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 2v14M9 2 5.5 5M9 2l3.5 3M9 16l-3.5-3M9 16l3.5-3M2 9h14M2 9l3-3.5M2 9l3 3.5M16 9l-3-3.5M16 9l-3 3.5" stroke="#F9A825" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[14px] font-bold" style={{ color: darkMode ? "#FFE082" : "#8D5A00", fontFamily: "'DM Sans', sans-serif" }}>
-                🏆 Scoreboard frozen for the final 15 minutes!
-              </span>
-              <span className="text-[12px]" style={{ color: darkMode ? "#D8C088" : "#8D6E00", fontFamily: "'Roboto', sans-serif" }}>
-                Rankings are locked in — every last-minute submission still counts, but you'll only see who really won once the contest ends. Good luck!
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* Overview Cards */}
         <div className="grid grid-cols-3 gap-5 flex-shrink-0">
           {[
@@ -364,9 +340,30 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
 
         {/* Leaderboard Table */}
         <div
-          className="rounded-[16px] overflow-hidden flex flex-col min-h-0"
+          className="relative rounded-[16px] overflow-hidden flex flex-col min-h-0"
           style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}` }}
         >
+          {isFrozen && (
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-center px-6"
+              style={{ backgroundColor: darkMode ? "rgba(18,18,18,0.72)" : "rgba(248,249,250,0.82)" }}
+            >
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: darkMode ? "#4A3600" : "#FFECB3" }}>
+                <svg width="26" height="26" viewBox="0 0 20 20" fill="none">
+                  <rect x="4" y="9" width="12" height="9" rx="1.5" stroke="#F9A825" strokeWidth="1.6" />
+                  <path d="M6.5 9V6a3.5 3.5 0 0 1 7 0v3" stroke="#F9A825" strokeWidth="1.6" strokeLinecap="round" />
+                  <circle cx="10" cy="13.2" r="1.1" fill="#F9A825" />
+                </svg>
+              </div>
+              <span className="text-[20px] font-bold tracking-[-0.3px]" style={{ color: darkMode ? "#FFE082" : "#8D5A00", fontFamily: "'DM Sans', sans-serif" }}>
+                🔒 The Leaderboard is Now Frozen!
+              </span>
+              <span className="text-[13px]" style={{ color: darkMode ? "#D8C088" : "#8D6E00", fontFamily: "'Roboto', sans-serif", maxWidth: "360px" }}>
+                Who's really in the lead? Results will be revealed once the contest ends. Good luck!
+              </span>
+            </div>
+          )}
+
           <div className="grid items-center px-6 py-3 border-b" style={{ gridTemplateColumns: gridColumns, gap: "12px", backgroundColor: tableHeaderBg, borderColor }}>
             {["Rank", "Team Name", "Score", "Total Time", ...problemCodes].map((h, i) => (
               <div
