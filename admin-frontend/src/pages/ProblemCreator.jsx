@@ -100,14 +100,27 @@ function RichToolbar({ darkMode }) {
   );
 }
 
-// Problem letter badge picker 
+// Problem letter badge picker
 
-const PROBLEM_LETTERS = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+// Always show A-E; anything past that is only revealed once actually
+// needed (an existing problem uses it, or the admin taps "+" for one more),
+// instead of dumping all 26 letters on screen up front.
+const BASE_LETTER_COUNT = 5;
+const MAX_LETTER_COUNT = 26;
+
+const letterIndex = (letter) => letter.charCodeAt(0) - 65;
 
 function ProblemLetterPicker({ value, onChange, takenLetters, darkMode }) {
+  const highestTakenIndex = takenLetters.reduce((max, l) => Math.max(max, letterIndex(l)), -1);
+  const valueIndex = value ? letterIndex(value) : -1;
+  const highestVisibleIndex = Math.max(BASE_LETTER_COUNT - 1, highestTakenIndex, valueIndex);
+
+  const visibleLetters = Array.from({ length: highestVisibleIndex + 1 }, (_, i) => String.fromCharCode(65 + i));
+  const canAddMore = highestVisibleIndex < MAX_LETTER_COUNT - 1;
+
   return (
     <div className="flex flex-wrap gap-2">
-      {PROBLEM_LETTERS.map(l => {
+      {visibleLetters.map(l => {
         const isTaken = takenLetters.includes(l);
         return (
           <button
@@ -131,6 +144,23 @@ function ProblemLetterPicker({ value, onChange, takenLetters, darkMode }) {
           </button>
         );
       })}
+
+      {canAddMore && (
+        <button
+          onClick={() => onChange(String.fromCharCode(65 + highestVisibleIndex + 1))}
+          title="Add another problem letter"
+          className="w-9 h-9 rounded-[8px] flex items-center justify-center transition-all duration-150 hover:bg-[#E8F0FE] dark:hover:bg-neutral-800"
+          style={{
+            border: `1.5px dashed ${darkMode ? '#404040' : '#E0E0E0'}`,
+            color: darkMode ? '#A3A3A3' : '#5F6368',
+            backgroundColor: "transparent",
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
