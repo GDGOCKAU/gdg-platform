@@ -16,12 +16,16 @@ when a user opens the leaderboard page, the ranked results are returned to the f
 const pool = require("../config/database");
 
 //triggered after Judge0 returns Accepted --> trigger implemented in judgeWorker class
+//main functionality is to validates whether the submission should affect the leaderboard . 
+//validation includes checking if the team has already solved the problem, and if not, assigns points to the team in the leaderboard table.
+//also checks which competiton the team is registered in 
 //calls all the helper methods below
-const leaderboardTrigger = async (teamId, problemId) => {
 
+const leaderboardTrigger = async (submissionId, teamId, problemId, pointsAssigned) => {
     try {
 
-        const competitionResult = await pool.query(
+        //checks which competition the team is registered in  
+        const competitionID_Result = await pool.query(
             `
             SELECT competition_id
             FROM teams
@@ -30,24 +34,30 @@ const leaderboardTrigger = async (teamId, problemId) => {
             [teamId]
         );
 
-        if (competitionResult.rows.length === 0) {
+        if (competitionID_Result.rows.length === 0) {
             return;
         }
 
-        const competitionId =
-            competitionResult.rows[0].competition_id;
+        const competitionId = competitionID_Result.rows[0].competition_id;
 
-        const pointsAssigned =
-            await getProblemPoints(problemId);
 
-        await assignPoints(
+        //checks if the team has alredy solved the problem, if solved --> no points
+        if (await alreadySolved(submissionId, teamId, problemId)) {
+            return;
+        }
 
+        //if the team has not solved the problem --> assign points 
+        await assignPoints(teamId, competitionId, Number(pointsAssigned));
+
+        console.log({
+            submissionId,
             teamId,
-
+            problemId,
             competitionId,
-
             pointsAssigned
+        });
 
+<<<<<<< HEAD
         );
 
     }
@@ -59,43 +69,45 @@ const leaderboardTrigger = async (teamId, problemId) => {
             error
         );
 
+=======
+    } catch (error) {
+        console.error("Leaderboard trigger error:", error);
+>>>>>>> 821a0a0 (leaderboard changes)
         throw error;
-
     }
-
 };
 
-//retrieves the points assigned to a problem from problems table
-const getProblemPoints = async (problemId) => {
 
-    const problemResult = await pool.query(
+//checks if the team has already solved the problem by its status 'Accepted' 
+const alreadySolved = async (submissionId, teamId, problemId) => {
 
+    const result = await pool.query(
         `
-        SELECT points_assigned
-        FROM problems
-        WHERE problem_id = $1
+        SELECT 1
+        FROM submissions
+        WHERE
+            team_id = $1
+            AND problem_id = $2
+            AND status = 'Accepted'
+            AND submission_id <> $3
+        LIMIT 1
         `,
-
-        [problemId]
+        [teamId, problemId, submissionId]
 
     );
-
-    if (problemResult.rows.length === 0) {
-
-        throw new Error(
-            "Problem not found."
-        );
-
-    }
-
-    return Number(
-        problemResult.rows[0].points_assigned
-    );
+    return result.rows.length > 0;
 
 };
 
-//assign the points retrieved to the teams total points --> defualt is 0
-const assignPoints = async (teamId,competitionId,pointsAssigned) => {
+//assigns the points retrieved to the teams total points --> defualt beginning is 0 and it is incremented based on the points assigned in the problem table 
+//updates the leaderboard table with the new total points and increments the solved questions by 1 (2/4 for example)
+
+const assignPoints = async (teamId, competitionId, pointsAssigned) => {
+    console.log({
+        teamId,
+        competitionId,
+        pointsAssigned
+    });
 
     const client = await pool.connect();
 
@@ -103,113 +115,40 @@ const assignPoints = async (teamId,competitionId,pointsAssigned) => {
 
         await client.query("BEGIN");
 
-        const leaderboardResult =
-            await client.query(
-
-                `
-                SELECT
-
-                    points,
-
-                    solved_questions
-
-                FROM leaderboard
-
-                WHERE
-
-                    team_id = $1
-
-                    AND competition_id = $2
-                `,
-
-                [
-
-                    teamId,
-
-                    competitionId
-
-                ]
-
-            );
-
-        if (
-            leaderboardResult.rows.length === 0
-        ) {
-
-            throw new Error(
-                "Leaderboard row not found."
-            );
-
-        }
-
-        const currentPoints =
-            Number(
-                leaderboardResult.rows[0].points
-            );
-
-        const currentSolvedQuestions =
-            Number(
-                leaderboardResult.rows[0].solved_questions
-            );
-
-        const updatedPoints =
-            currentPoints + pointsAssigned;
-
-        const updatedSolvedQuestions =
-            currentSolvedQuestions + 1;
-
-        await client.query(
-
+        const updateResult = await client.query(
             `
-            UPDATE leaderboard
-
-            SET
-
-                points = $1,
-
-                solved_questions = $2
-
-            WHERE
-
-                team_id = $3
-
-                AND competition_id = $4
-            `,
-
-            [
-
-                updatedPoints,
-
-                updatedSolvedQuestions,
-
-                teamId,
-
-                competitionId
-
-            ]
-
+    UPDATE leaderboard
+    SET
+        points = points + $1,
+        solved_questions = solved_questions + 1
+    WHERE
+        team_id = $2
+        AND competition_id = $3
+    `,
+            [pointsAssigned, teamId, competitionId]
         );
 
+        if (updateResult.rowCount === 0) {
+            throw new Error("Leaderboard row not found.");
+        }
+
         await client.query("COMMIT");
-
-    }
-
-    catch (error) {
+    } catch (error) {
 
         await client.query("ROLLBACK");
-
         throw error;
 
-    }
-
-    finally {
+    } finally {
 
         client.release();
 
     }
-
 };
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 821a0a0 (leaderboard changes)
 //formats a millisecond offset as "+NN min" for a single accepted problem
 const formatOffset = (ms) => {
     const totalMinutes = Math.max(0, Math.floor(ms / 60000));
@@ -250,15 +189,23 @@ const getScoreboardFreezeState = ({ status, ended_at }) => {
 //participant-facing route and the admin contest archive.
 const buildLeaderboard = async (competitionId) => {
 
+<<<<<<< HEAD
         const competitionResult = await pool.query(
             `SELECT started_at, ended_at, status FROM competitions WHERE competition_id = $1`,
             [competitionId]
         );
+=======
+    const competitionResult = await pool.query(
+        `SELECT started_at FROM competitions WHERE competition_id = $1`,
+        [competitionId]
+    );
+>>>>>>> 821a0a0 (leaderboard changes)
 
-        if (competitionResult.rows.length === 0) {
-            return null;
-        }
+    if (competitionResult.rows.length === 0) {
+        return null;
+    }
 
+<<<<<<< HEAD
         const { started_at: contestStartedAt, ended_at: contestEndedAt, status } = competitionResult.rows[0];
 
         const { isFrozen, isAutoFrozen, freezeStartsAt } = getScoreboardFreezeState({ status, ended_at: contestEndedAt });
@@ -267,18 +214,80 @@ const buildLeaderboard = async (competitionId) => {
 
         const problemsResult = await pool.query(
             `SELECT problem_id, problem_code, points_assigned
+=======
+    const contestStartedAt = competitionResult.rows[0].started_at;
+
+    const problemsResult = await pool.query(
+        `SELECT problem_id, problem_code
+>>>>>>> 821a0a0 (leaderboard changes)
              FROM problems
              WHERE competition_id = $1
              ORDER BY problem_code`,
-            [competitionId]
+        [competitionId]
+    );
+
+<<<<<<< HEAD
+        const problemIds = problemsResult.rows.map((p) => p.problem_id);
+=======
+    const leaderboardResult =
+        await pool.query(
+
+            `
+                SELECT
+
+                    ROW_NUMBER() OVER(
+
+                        PARTITION BY leaderboard.competition_id
+
+                        ORDER BY
+
+                            leaderboard.points DESC,
+
+                            leaderboard.solved_questions DESC
+
+                    ) AS rank,
+
+                    team.team_id,
+
+                    team.team_name,
+
+                    leaderboard.points,
+
+                    leaderboard.solved_questions
+
+                FROM leaderboard
+
+                INNER JOIN teams team
+
+                    ON leaderboard.team_id =
+                    team.team_id
+
+                WHERE
+
+                    leaderboard.competition_id = $1
+
+                ORDER BY
+
+                    leaderboard.points DESC,
+
+                    leaderboard.solved_questions DESC
+                `,
+
+            [
+
+                competitionId
+
+            ]
+
         );
 
-        const problemIds = problemsResult.rows.map((p) => p.problem_id);
+    const problemIds = problemsResult.rows.map((p) => p.problem_id);
+>>>>>>> 821a0a0 (leaderboard changes)
 
-        const submissionsResult = problemIds.length === 0
-            ? { rows: [] }
-            : await pool.query(
-                `
+    const submissionsResult = problemIds.length === 0
+        ? { rows: [] }
+        : await pool.query(
+            `
                 SELECT
                     team_id,
                     problem_id,
@@ -294,17 +303,23 @@ const buildLeaderboard = async (competitionId) => {
                 WHERE problem_id = ANY($1::int[])
                 GROUP BY team_id, problem_id
                 `,
+<<<<<<< HEAD
                 [problemIds, cutoff]
             );
+=======
+            [problemIds]
+        );
+>>>>>>> 821a0a0 (leaderboard changes)
 
-        const submissionsByTeam = new Map();
-        for (const row of submissionsResult.rows) {
-            if (!submissionsByTeam.has(row.team_id)) {
-                submissionsByTeam.set(row.team_id, new Map());
-            }
-            submissionsByTeam.get(row.team_id).set(row.problem_id, row);
+    const submissionsByTeam = new Map();
+    for (const row of submissionsResult.rows) {
+        if (!submissionsByTeam.has(row.team_id)) {
+            submissionsByTeam.set(row.team_id, new Map());
         }
+        submissionsByTeam.get(row.team_id).set(row.problem_id, row);
+    }
 
+<<<<<<< HEAD
         // Points/solved counts are recomputed directly from submissions (rather
         // than read off the live-updated `leaderboard` table) so the same
         // cutoff can be applied consistently to rank, score, and the per-problem
@@ -319,10 +334,16 @@ const buildLeaderboard = async (competitionId) => {
             let points = 0;
             let solvedQuestions = 0;
             let totalTimeMs = 0;
+=======
+    const leaderboard = leaderboardResult.rows.map((team) => {
+        const teamSubmissions = submissionsByTeam.get(team.team_id);
+        let totalTimeMs = 0;
+>>>>>>> 821a0a0 (leaderboard changes)
 
-            const problems = problemsResult.rows.map((problem) => {
-                const submission = teamSubmissions?.get(problem.problem_id);
+        const problems = problemsResult.rows.map((problem) => {
+            const submission = teamSubmissions?.get(problem.problem_id);
 
+<<<<<<< HEAD
                 if (!submission || submission.attempt_count === "0") {
                     return { problem_code: problem.problem_code, state: "unattempted" };
                 }
@@ -338,15 +359,24 @@ const buildLeaderboard = async (competitionId) => {
                         time: formatOffset(offsetMs),
                     };
                 }
+=======
+            if (!submission || submission.attempt_count === "0") {
+                return { problem_code: problem.problem_code, state: "unattempted" };
+            }
+>>>>>>> 821a0a0 (leaderboard changes)
 
+            if (submission.accepted_at) {
+                const offsetMs = new Date(submission.accepted_at) - new Date(contestStartedAt);
+                totalTimeMs += offsetMs;
                 return {
                     problem_code: problem.problem_code,
-                    state: "wrong",
-                    attempts: Number(submission.attempt_count),
+                    state: "accepted",
+                    time: formatOffset(offsetMs),
                 };
-            });
+            }
 
             return {
+<<<<<<< HEAD
                 team_id: team.team_id,
                 team_name: team.team_name,
                 points,
@@ -369,6 +399,26 @@ const buildLeaderboard = async (competitionId) => {
             is_auto_frozen: isAutoFrozen,
             freeze_ends_at: isFrozen ? contestEndedAt : null,
         };
+=======
+                problem_code: problem.problem_code,
+                state: "wrong",
+                attempts: Number(submission.attempt_count),
+            };
+        });
+
+        return {
+            rank: Number(team.rank),
+            team_id: team.team_id,
+            team_name: team.team_name,
+            points: team.points,
+            solved_questions: team.solved_questions,
+            total_time: formatDuration(totalTimeMs),
+            problems,
+        };
+    });
+
+    return leaderboard;
+>>>>>>> 821a0a0 (leaderboard changes)
 
 };
 
@@ -399,7 +449,7 @@ const getLeaderboard = async (req, res) => {
 
             message:
 
-            "Unable to retrieve leaderboard."
+                "Unable to retrieve leaderboard."
 
         });
 
@@ -409,12 +459,14 @@ const getLeaderboard = async (req, res) => {
 
 
 module.exports = {
-
     leaderboardTrigger,
-    getProblemPoints,
     assignPoints,
     buildLeaderboard,
+<<<<<<< HEAD
     getLeaderboard,
     getScoreboardFreezeState
 
+=======
+    getLeaderboard
+>>>>>>> 821a0a0 (leaderboard changes)
 };

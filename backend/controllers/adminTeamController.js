@@ -29,21 +29,31 @@ const getTeams = async (req, res) => {
 
     const result = competitionId
       ? await pool.query(
+<<<<<<< HEAD
           `
             SELECT team_id, team_name, access_code, competition_id, theme, last_seen_at, created_at, is_disqualified
+=======
+        `
+            SELECT team_id, team_name, access_code, competition_id, theme, last_seen_at, created_at
+>>>>>>> 821a0a0 (leaderboard changes)
             FROM teams
             WHERE competition_id = $1
             ORDER BY created_at DESC
           `,
-          [competitionId]
-        )
+        [competitionId]
+      )
       : await pool.query(
+<<<<<<< HEAD
           `
             SELECT team_id, team_name, access_code, competition_id, theme, last_seen_at, created_at, is_disqualified
+=======
+        `
+            SELECT team_id, team_name, access_code, competition_id, theme, last_seen_at, created_at
+>>>>>>> 821a0a0 (leaderboard changes)
             FROM teams
             ORDER BY created_at DESC
           `
-        );
+      );
 
     return res.status(200).json({ teams: result.rows.map(formatTeam) });
   } catch (error) {
@@ -97,6 +107,7 @@ const createTeam = async (req, res) => {
 
       const result = await client.query(
         `
+<<<<<<< HEAD
           INSERT INTO teams (team_name, access_code, competition_id)
           VALUES ($1, $2, $3)
           RETURNING team_id, team_name, access_code, competition_id, theme, last_seen_at, created_at, is_disqualified
@@ -115,16 +126,55 @@ const createTeam = async (req, res) => {
           VALUES ($1, $2, 0, 0)
         `,
         [team.team_id, resolvedCompetitionId]
+=======
+      INSERT INTO teams (team_name, access_code, competition_id)
+      VALUES ($1, $2, $3)
+      RETURNING
+        team_id,
+        team_name,
+        access_code,
+        competition_id,
+        theme,
+        last_seen_at,
+        created_at
+    `,
+        [team_name.trim(), access_code.trim(), resolvedCompetitionId]
+      );
+
+      //also inserts the team and comepetition ID's into the leaderboard table 
+      await client.query(
+        `
+      INSERT INTO leaderboard (team_id,competition_id)
+      VALUES ($1, $2)
+    `,
+        [result.rows[0].team_id, result.rows[0].competition_id]
+>>>>>>> 821a0a0 (leaderboard changes)
       );
 
       await client.query("COMMIT");
 
+<<<<<<< HEAD
       return res.status(201).json({ team: formatTeam(team) });
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
     } finally {
       client.release();
+=======
+      return res.status(201).json({
+        team: formatTeam(result.rows[0]),
+      });
+
+    } catch (error) {
+
+      await client.query("ROLLBACK");
+      throw error;
+
+    } finally {
+
+      client.release();
+
+>>>>>>> 821a0a0 (leaderboard changes)
     }
   } catch (error) {
     if (error.code === "23505") {

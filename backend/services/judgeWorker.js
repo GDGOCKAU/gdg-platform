@@ -9,7 +9,11 @@
 
 const pool = require("../config/database");
 const { getSubmissionBatch } = require("./judge0Service");
+<<<<<<< HEAD
 const { leaderboardTrigger } = require("../controllers/leaderbord");
+=======
+const leaderboardController = require("../controllers/leaderbord");
+>>>>>>> 821a0a0 (leaderboard changes)
 
 const sleep = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -63,6 +67,7 @@ const judgeSubmission = async (submissionId) => {
           s.submission_id,
           s.team_id,
           s.problem_id,
+          s.team_id,
           p.points_assigned
         FROM submissions s
         JOIN problems p
@@ -192,9 +197,9 @@ const judgeSubmission = async (submissionId) => {
 
     const errorMessage = firstFailedResult
       ? firstFailedResult.compileOutput ||
-        firstFailedResult.stderr ||
-        firstFailedResult.judgeMessage ||
-        firstFailedResult.platformStatus
+      firstFailedResult.stderr ||
+      firstFailedResult.judgeMessage ||
+      firstFailedResult.platformStatus
       : null;
 
     const client = await pool.connect();
@@ -264,6 +269,17 @@ const judgeSubmission = async (submissionId) => {
       throw error;
     } finally {
       client.release();
+    }
+
+    ///if status is accepted -->  trigger the leaderboard to initiate the update with points
+    if (finalStatus === "Accepted") {
+
+      await leaderboardController.leaderboardTrigger(
+        submissionId,
+        submissionResult.rows[0].team_id,
+        submissionResult.rows[0].problem_id,
+        submissionResult.rows[0].points_assigned
+      );
     }
 
     console.log(

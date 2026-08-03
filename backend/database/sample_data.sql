@@ -102,6 +102,7 @@ VALUES
 INSERT INTO teams
     (team_name, access_code, competition_id, theme, last_seen_at)
 VALUES
+<<<<<<< HEAD
     -- Competition 1 (Active): full spread of Active / Inactive / Pending
     ('Byte Force',     '111111', 1, 'Dark',  CURRENT_TIMESTAMP),                             -- Active
     ('Code Falcons',   '222222', 1, 'Light', CURRENT_TIMESTAMP - INTERVAL '2 minutes'),       -- Active
@@ -124,6 +125,50 @@ VALUES
 
     -- Competition 5 (Cancelled): registered, never got to log in
     ('Ghost Team',     '141414', 5, 'Dark',  NULL);
+=======
+(
+    'Byte Force',
+    '111111',
+    1,
+    'Dark',
+    CURRENT_TIMESTAMP
+),
+(
+    'test2',
+    '777777',
+    1,
+    'Dark',
+    CURRENT_TIMESTAMP
+),
+(
+    'Code Falcons',
+    '222222',
+    1,
+    'Dark',
+    CURRENT_TIMESTAMP - INTERVAL '2 minutes'
+),
+(
+    'Null Pointers',
+    '333333',
+    1,
+    'Dark',
+    CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+),
+(
+    'API Masters',
+    '444444',
+    2,
+    'Dark',
+    CURRENT_TIMESTAMP - INTERVAL '25 minutes'
+),
+(
+    'test',
+    '1234',
+    1,
+    'Dark',
+    CURRENT_TIMESTAMP - INTERVAL '1 minute'
+);
+>>>>>>> 821a0a0 (leaderboard changes)
 
 -- =========================================================
 -- Users
