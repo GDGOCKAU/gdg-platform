@@ -44,7 +44,7 @@ BEGIN;
 -- Competitions
 -- =========================================================
 INSERT INTO competitions
-    (competition_name, description, difficulty, status, max_teams, started_at, ended_at)
+    (competition_name, description, difficulty, status, max_teams, started_at, ended_at, penalty_minutes)
 VALUES
     (
         -- Currently running "now" (started 2h ago, ends in 3h) so the
@@ -57,7 +57,8 @@ VALUES
         'Active',
         20,
         (CURRENT_TIMESTAMP - INTERVAL '2 hours')::TIMESTAMP,
-        (CURRENT_TIMESTAMP + INTERVAL '4 hours')::TIMESTAMP
+        (CURRENT_TIMESTAMP + INTERVAL '4 hours')::TIMESTAMP,
+        20
     ),
     (
         'Backend Sprint Contest',
@@ -66,16 +67,20 @@ VALUES
         'Upcoming',
         10,
         (CURRENT_TIMESTAMP + INTERVAL '5 days')::TIMESTAMP,
-        (CURRENT_TIMESTAMP + INTERVAL '5 days 2 hours')::TIMESTAMP
+        (CURRENT_TIMESTAMP + INTERVAL '5 days 2 hours')::TIMESTAMP,
+        20
     ),
     (
+        -- Custom (non-default) penalty to exercise admin-configured
+        -- penalty_minutes flowing through the leaderboard calculation.
         'Frozen Finals',
         'Regional final round; scoreboard frozen for the last hour.',
         'Hard',
         'Frozen',
         15,
         (CURRENT_TIMESTAMP - INTERVAL '1 day')::TIMESTAMP,
-        (CURRENT_TIMESTAMP - INTERVAL '1 day' + INTERVAL '3 hours')::TIMESTAMP
+        (CURRENT_TIMESTAMP - INTERVAL '1 day' + INTERVAL '3 hours')::TIMESTAMP,
+        15
     ),
     (
         'Summer Kickoff 2026',
@@ -84,7 +89,8 @@ VALUES
         'Finished',
         8,
         (CURRENT_TIMESTAMP - INTERVAL '20 days')::TIMESTAMP,
-        (CURRENT_TIMESTAMP - INTERVAL '20 days' + INTERVAL '3 hours')::TIMESTAMP
+        (CURRENT_TIMESTAMP - INTERVAL '20 days' + INTERVAL '3 hours')::TIMESTAMP,
+        20
     ),
     (
         'Cancelled Regional Round',
@@ -93,7 +99,8 @@ VALUES
         'Cancelled',
         12,
         (CURRENT_TIMESTAMP - INTERVAL '10 days')::TIMESTAMP,
-        (CURRENT_TIMESTAMP - INTERVAL '10 days' + INTERVAL '2 hours')::TIMESTAMP
+        (CURRENT_TIMESTAMP - INTERVAL '10 days' + INTERVAL '2 hours')::TIMESTAMP,
+        20
     );
 
 -- =========================================================

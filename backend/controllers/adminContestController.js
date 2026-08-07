@@ -28,6 +28,7 @@ const createCompetition = async (req, res) => {
       max_teams,
       started_at,
       duration_minutes,
+      penalty_minutes,
     } = req.body;
 
     const allowedDifficulties = [
@@ -49,6 +50,9 @@ const createCompetition = async (req, res) => {
 
     const maxTeams = Number(max_teams);
     const durationMinutes = Number(duration_minutes);
+    const penaltyMinutes = penalty_minutes === undefined || penalty_minutes === null || penalty_minutes === ""
+      ? 20
+      : Number(penalty_minutes);
 
     if (!competitionName) {
       return res.status(400).json({
@@ -101,6 +105,16 @@ const createCompetition = async (req, res) => {
       return res.status(400).json({
         message:
           "Duration must be a positive number of minutes",
+      });
+    }
+
+    if (
+      !Number.isInteger(penaltyMinutes) ||
+      penaltyMinutes < 0
+    ) {
+      return res.status(400).json({
+        message:
+          "Penalty minutes must be a non-negative integer",
       });
     }
 
@@ -167,7 +181,8 @@ const createCompetition = async (req, res) => {
           status,
           max_teams,
           started_at,
-          ended_at
+          ended_at,
+          penalty_minutes
         )
         VALUES
         (
@@ -178,7 +193,8 @@ const createCompetition = async (req, res) => {
           $4,
           $5::TIMESTAMP,
           $5::TIMESTAMP
-            + ($6 * INTERVAL '1 minute')
+            + ($6 * INTERVAL '1 minute'),
+          $7
         )
         RETURNING
           competition_id,
@@ -188,7 +204,8 @@ const createCompetition = async (req, res) => {
           status,
           max_teams,
           started_at,
-          ended_at
+          ended_at,
+          penalty_minutes
       `,
       [
         competitionName,
@@ -197,6 +214,7 @@ const createCompetition = async (req, res) => {
         maxTeams,
         started_at,
         durationMinutes,
+        penaltyMinutes,
       ]
     );
 
@@ -288,6 +306,7 @@ const updateCompetition = async (req, res) => {
       ended_at,
       duration_minutes,
       status,
+      penalty_minutes,
     } = req.body;
 
     await client.query("BEGIN");
@@ -371,6 +390,18 @@ const updateCompetition = async (req, res) => {
 
       fields.push(`max_teams = $${index++}`);
       values.push(maxTeams);
+    }
+
+    if (penalty_minutes !== undefined) {
+      const penaltyMinutes = Number(penalty_minutes);
+
+      if (!Number.isInteger(penaltyMinutes) || penaltyMinutes < 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ message: "Penalty minutes must be a non-negative integer" });
+      }
+
+      fields.push(`penalty_minutes = $${index++}`);
+      values.push(penaltyMinutes);
     }
 
     if (status !== undefined) {
@@ -554,27 +585,25 @@ const getCompetitionHistory = async (req, res) => {
 
     const competitionIds = competitionsResult.rows.map((c) => c.competition_id);
 
-    const winnersResult = competitionIds.length === 0
-      ? { rows: [] }
-      : await pool.query(
-          `
-            SELECT DISTINCT ON (l.competition_id)
-              l.competition_id,
-              t.team_id,
-              t.team_name,
-              l.points,
-              l.solved_questions
-            FROM leaderboard l
-            INNER JOIN teams t ON t.team_id = l.team_id
-            WHERE l.competition_id = ANY($1::int[])
-            ORDER BY l.competition_id, l.points DESC, l.solved_questions DESC
-          `,
-          [competitionIds]
-        );
+    // Winners are derived from buildLeaderboard (points -> solved -> total
+    // time) rather than a raw query against the `leaderboard` table, so a
+    // tie broken by time is reflected the same way here as on the live
+    // scoreboard.
+    const winnerByCompetition = new Map();
 
-    const winnerByCompetition = new Map(
-      winnersResult.rows.map((row) => [row.competition_id, row])
-    );
+    for (const competitionId of competitionIds) {
+      const result = await buildLeaderboard(competitionId);
+      const topTeam = result?.leaderboard?.[0];
+
+      if (topTeam) {
+        winnerByCompetition.set(competitionId, {
+          team_id: topTeam.team_id,
+          team_name: topTeam.team_name,
+          points: topTeam.points,
+          solved_questions: topTeam.solved_questions,
+        });
+      }
+    }
 
     const competitions = competitionsResult.rows.map((competition) => ({
       ...competition,

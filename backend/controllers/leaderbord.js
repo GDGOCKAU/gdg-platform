@@ -251,7 +251,7 @@ const getScoreboardFreezeState = ({ status, ended_at }) => {
 const buildLeaderboard = async (competitionId) => {
 
         const competitionResult = await pool.query(
-            `SELECT started_at, ended_at, status FROM competitions WHERE competition_id = $1`,
+            `SELECT started_at, ended_at, status, penalty_minutes FROM competitions WHERE competition_id = $1`,
             [competitionId]
         );
 
@@ -259,7 +259,12 @@ const buildLeaderboard = async (competitionId) => {
             return null;
         }
 
-        const { started_at: contestStartedAt, ended_at: contestEndedAt, status } = competitionResult.rows[0];
+        const {
+            started_at: contestStartedAt,
+            ended_at: contestEndedAt,
+            status,
+            penalty_minutes: penaltyMinutes,
+        } = competitionResult.rows[0];
 
         const { isFrozen, isAutoFrozen, freezeStartsAt } = getScoreboardFreezeState({ status, ended_at: contestEndedAt });
 
@@ -275,24 +280,43 @@ const buildLeaderboard = async (competitionId) => {
 
         const problemIds = problemsResult.rows.map((p) => p.problem_id);
 
+        // For each (team, problem): the first Accepted timestamp (if any),
+        // the total judged-attempt count (for the "wrong" cell display), and
+        // the count of ICPC-penalized wrong attempts -- judged submissions
+        // that are neither 'Compilation Error' nor 'Accepted' and landed
+        // strictly before that first Accepted submission. Attempts made
+        // after a problem is already solved never count toward anything.
         const submissionsResult = problemIds.length === 0
             ? { rows: [] }
             : await pool.query(
                 `
+                WITH accepted AS (
+                    SELECT team_id, problem_id, MIN(submitted_at) AS accepted_at
+                    FROM submissions
+                    WHERE problem_id = ANY($1::int[])
+                      AND status = 'Accepted'
+                      AND ($2::timestamptz IS NULL OR submitted_at <= $2)
+                    GROUP BY team_id, problem_id
+                )
                 SELECT
-                    team_id,
-                    problem_id,
-                    MIN(submitted_at) FILTER (
-                        WHERE status = 'Accepted'
-                          AND ($2::timestamptz IS NULL OR submitted_at <= $2)
-                    ) AS accepted_at,
+                    s.team_id,
+                    s.problem_id,
+                    a.accepted_at,
                     COUNT(*) FILTER (
-                        WHERE status NOT IN ('Queued', 'Judging')
-                          AND ($2::timestamptz IS NULL OR submitted_at <= $2)
-                    ) AS attempt_count
-                FROM submissions
-                WHERE problem_id = ANY($1::int[])
-                GROUP BY team_id, problem_id
+                        WHERE s.status NOT IN ('Queued', 'Judging')
+                          AND ($2::timestamptz IS NULL OR s.submitted_at <= $2)
+                    ) AS attempt_count,
+                    COUNT(*) FILTER (
+                        WHERE s.status NOT IN ('Queued', 'Judging', 'Accepted', 'Compilation Error')
+                          AND a.accepted_at IS NOT NULL
+                          AND s.submitted_at < a.accepted_at
+                          AND ($2::timestamptz IS NULL OR s.submitted_at <= $2)
+                    ) AS penalized_attempts
+                FROM submissions s
+                LEFT JOIN accepted a
+                    ON a.team_id = s.team_id AND a.problem_id = s.problem_id
+                WHERE s.problem_id = ANY($1::int[])
+                GROUP BY s.team_id, s.problem_id, a.accepted_at
                 `,
                 [problemIds, cutoff]
             );
@@ -319,6 +343,7 @@ const buildLeaderboard = async (competitionId) => {
             let points = 0;
             let solvedQuestions = 0;
             let totalTimeMs = 0;
+            let totalPenaltyMs = 0;
 
             const problems = problemsResult.rows.map((problem) => {
                 const submission = teamSubmissions?.get(problem.problem_id);
@@ -328,14 +353,21 @@ const buildLeaderboard = async (competitionId) => {
                 }
 
                 if (submission.accepted_at) {
-                    const offsetMs = new Date(submission.accepted_at) - new Date(contestStartedAt);
-                    totalTimeMs += offsetMs;
+                    const solveTimeMs = new Date(submission.accepted_at) - new Date(contestStartedAt);
+                    const penalizedAttempts = Number(submission.penalized_attempts) || 0;
+                    const penaltyMs = penalizedAttempts * penaltyMinutes * 60000;
+
+                    totalTimeMs += solveTimeMs + penaltyMs;
+                    totalPenaltyMs += penaltyMs;
                     solvedQuestions += 1;
                     points += Number(problem.points_assigned) || 0;
+
                     return {
                         problem_code: problem.problem_code,
                         state: "accepted",
-                        time: formatOffset(offsetMs),
+                        time: formatOffset(solveTimeMs),
+                        penalty_attempts: penalizedAttempts,
+                        penalty_minutes: penalizedAttempts * penaltyMinutes,
                     };
                 }
 
@@ -352,11 +384,20 @@ const buildLeaderboard = async (competitionId) => {
                 points,
                 solved_questions: solvedQuestions,
                 total_time: formatDuration(totalTimeMs),
+                total_time_ms: totalTimeMs,
+                total_penalty_minutes: Math.round(totalPenaltyMs / 60000),
                 problems,
             };
         });
 
-        scored.sort((a, b) => b.points - a.points || b.solved_questions - a.solved_questions);
+        // ICPC-style ranking: most points, then most problems solved, then
+        // lowest total time (solve time + penalty_minutes per wrong
+        // attempt before that problem's first Accepted).
+        scored.sort((a, b) =>
+            b.points - a.points ||
+            b.solved_questions - a.solved_questions ||
+            a.total_time_ms - b.total_time_ms
+        );
 
         const leaderboard = scored.map((team, index) => ({
             rank: index + 1,

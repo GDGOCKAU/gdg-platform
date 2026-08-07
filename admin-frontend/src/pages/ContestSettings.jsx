@@ -460,6 +460,7 @@ export default function ContestSettings() {
   const [difficulty, setDifficulty]     = useState("Medium");
   const [startDate, setStartDate]       = useState("");
   const [duration, setDuration]         = useState("");
+  const [penaltyMinutes, setPenaltyMinutes] = useState("20");
   const [description, setDescription]   = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -489,6 +490,7 @@ export default function ContestSettings() {
     setDifficulty("Medium");
     setStartDate("");
     setDuration("");
+    setPenaltyMinutes("20");
     setDescription("");
   };
 
@@ -546,6 +548,7 @@ export default function ContestSettings() {
       setDifficulty(activeDetails.difficulty);
       setStartDate(toDateTimeLocal(activeDetails.started_at));
       setDuration(String(minutesBetween(activeDetails.started_at, activeDetails.ended_at)));
+      setPenaltyMinutes(String(activeDetails.penalty_minutes ?? 20));
       setDescription(activeDetails.description || "");
     }
     setSaveError("");
@@ -562,9 +565,15 @@ export default function ContestSettings() {
 
     const maxTeams = Number(teamCount);
     const durationMinutes = Number(duration);
+    const penaltyMinutesValue = Number(penaltyMinutes);
 
     if (!contestName.trim() || !startDate || !maxTeams || !durationMinutes) {
       setSaveError("Please fill in all required fields.");
+      return;
+    }
+
+    if (penaltyMinutes === "" || !Number.isInteger(penaltyMinutesValue) || penaltyMinutesValue < 0) {
+      setSaveError("Penalty minutes must be a non-negative whole number.");
       return;
     }
 
@@ -577,6 +586,7 @@ export default function ContestSettings() {
       max_teams: maxTeams,
       started_at: startDate,
       duration_minutes: durationMinutes,
+      penalty_minutes: penaltyMinutesValue,
     };
 
     try {
@@ -757,6 +767,12 @@ export default function ContestSettings() {
                 </FormField>
               </div>
 
+              <div className="grid grid-cols-3 gap-5">
+                <FormField label="Penalty Minutes (per wrong attempt)" darkMode={darkMode}>
+                  <Input placeholder="e.g., 20" type="number" value={penaltyMinutes} onChange={setPenaltyMinutes} darkMode={darkMode} />
+                </FormField>
+              </div>
+
               <FormField label="Contest Description / Info" darkMode={darkMode}>
                 <textarea
                   value={description}
@@ -826,7 +842,7 @@ export default function ContestSettings() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-5">
+              <div className="grid grid-cols-4 gap-5">
                 <div className="flex flex-col gap-1">
                   <span className={`text-[11px] font-bold uppercase tracking-wider font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Difficulty</span>
                   <span className={`text-[14px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#3C4043]'}`}>{activeDetails.difficulty}</span>
@@ -838,6 +854,10 @@ export default function ContestSettings() {
                 <div className="flex flex-col gap-1">
                   <span className={`text-[11px] font-bold uppercase tracking-wider font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Ends</span>
                   <span className={`text-[14px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#3C4043]'}`}>{formatDateTime(activeDetails.ended_at)}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[11px] font-bold uppercase tracking-wider font-['Roboto'] ${darkMode ? 'text-neutral-500' : 'text-[#9AA0A6]'}`}>Penalty / Wrong Attempt</span>
+                  <span className={`text-[14px] font-semibold font-['DM_Sans'] ${darkMode ? 'text-neutral-200' : 'text-[#3C4043]'}`}>{activeDetails.penalty_minutes ?? 20} min</span>
                 </div>
               </div>
 

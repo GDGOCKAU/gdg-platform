@@ -75,8 +75,22 @@ function RankBadge({ rank, darkMode }) {
 
 function ProblemCell({ result, darkMode }) {
   if (result.state === "accepted") {
+    const penaltyAttempts = result.penalty_attempts || 0;
+    const hasPenalty = penaltyAttempts > 0;
     return (
-      <div className="flex flex-col items-center justify-center gap-0.5 w-[72px] h-[52px] rounded-[8px]" style={{ backgroundColor: darkMode ? "#1B3320" : "#E8F5E9", border: "1px solid #34A853" }}>
+      <div
+        className="relative flex flex-col items-center justify-center gap-0.5 w-[72px] h-[52px] rounded-[8px]"
+        style={{ backgroundColor: darkMode ? "#1B3320" : "#E8F5E9", border: "1px solid #34A853" }}
+        title={hasPenalty ? `Solved at ${result.time} · +${result.penalty_minutes} min penalty (${penaltyAttempts} wrong attempt${penaltyAttempts === 1 ? "" : "s"} before solving)` : `Solved at ${result.time}`}
+      >
+        {hasPenalty && (
+          <span
+            className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-[16px] h-[16px] rounded-full text-[8px] font-bold text-white"
+            style={{ backgroundColor: "#F9A825" }}
+          >
+            +{penaltyAttempts}
+          </span>
+        )}
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <circle cx="7" cy="7" r="6" fill="#34A853" />
           <path d="M4 7L6 9L10 5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -365,11 +379,12 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
           )}
 
           <div className="grid items-center px-6 py-3 border-b" style={{ gridTemplateColumns: gridColumns, gap: "12px", backgroundColor: tableHeaderBg, borderColor }}>
-            {["Rank", "Team Name", "Score", "Total Time", ...problemCodes].map((h, i) => (
+            {["Rank", "Team Name", "Score", "Time (+Penalty)", ...problemCodes].map((h, i) => (
               <div
                 key={h}
                 className="text-[11px] font-bold uppercase tracking-wider"
                 style={{ color: darkMode ? "#888888" : "#9AA0A6", fontFamily: "'Roboto', sans-serif", textAlign: i >= 4 ? "center" : i >= 2 ? "right" : "left" }}
+                title={h === "Time (+Penalty)" ? "Total solve time plus the ICPC-style time penalty added for wrong attempts before solving each problem" : undefined}
               >
                 {i >= 4 ? (
                   <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto" style={{ backgroundColor: darkMode ? "#1A2E4B" : "#E8F0FE", color: "#3A7CF5" }}>{h}</span>
@@ -417,6 +432,9 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
                   </div>
                   <div className="text-right">
                     <div className="text-[13px] tabular-nums font-medium" style={{ color: darkMode ? "#CCCCCC" : "#3C4043", fontFamily: "'JetBrains Mono', monospace" }}>{team.total_time}</div>
+                    {team.total_penalty_minutes > 0 && (
+                      <div className="text-[10px] font-semibold" style={{ color: "#F9A825", fontFamily: "'Roboto', sans-serif" }}>+{team.total_penalty_minutes}m penalty</div>
+                    )}
                   </div>
                   {team.problems.map((result, pi) => (
                     <div key={pi} className="flex justify-center"><ProblemCell result={result} darkMode={darkMode} /></div>
@@ -452,6 +470,10 @@ export default function LeaderboardView({ darkMode, setDarkMode }) {
           <div className="flex items-center gap-2">
             <div className="w-1 h-6 rounded-full bg-[#3A7CF5]" />
             <span className="text-[12px]" style={{ color: subTextColor, fontFamily: "'Roboto', sans-serif" }}>Your team</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: "#F9A825" }}>+N</div>
+            <span className="text-[12px]" style={{ color: subTextColor, fontFamily: "'Roboto', sans-serif" }}>Time penalty from wrong attempts</span>
           </div>
         </div>
       </div>

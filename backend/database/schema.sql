@@ -35,6 +35,10 @@ CREATE TABLE competitions (
     started_at          TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     ended_at            TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 
+    -- ICPC-style time penalty added per wrong attempt before a problem is
+    -- first solved, in minutes. Used by the leaderboard time tiebreaker.
+    penalty_minutes     INTEGER NOT NULL DEFAULT 20 CHECK (penalty_minutes >= 0),
+
     CONSTRAINT chk_competition_dates
         CHECK (ended_at > started_at)
 );

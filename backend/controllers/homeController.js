@@ -1,24 +1,9 @@
 const pool = require("../config/database");
+const { buildLeaderboard } = require("./leaderbord");
 
 const getDashboard = async (req, res) => {
   try {
     const { team_id, competition_id } = req.user;
-
-    const standingQuery = `
-      SELECT team_id, points, solved_questions, rnk::int AS rnk
-      FROM (
-        SELECT
-          team_id,
-          points,
-          solved_questions,
-          RANK() OVER (
-            ORDER BY points DESC, solved_questions DESC
-          ) AS rnk
-        FROM leaderboard
-        WHERE competition_id = $1
-      ) ranked
-      WHERE team_id = $2
-    `;
 
     const totalProblemsQuery = `
       SELECT COUNT(*)::int AS total
@@ -26,19 +11,24 @@ const getDashboard = async (req, res) => {
       WHERE competition_id = $1
     `;
 
-    const [standingResult, totalProblemsResult] = await Promise.all([
-      pool.query(standingQuery, [competition_id, team_id]),
+    // Rank/points/solved come from the same buildLeaderboard() the
+    // scoreboard uses, so this widget matches it exactly -- same points ->
+    // solved -> total-time tiebreak, and the same freeze cutoff.
+    const [leaderboardResult, totalProblemsResult] = await Promise.all([
+      buildLeaderboard(competition_id),
       pool.query(totalProblemsQuery, [competition_id]),
     ]);
 
-    const standing = standingResult.rows[0] || {
-      rnk: null,
+    const standing = leaderboardResult?.leaderboard?.find(
+      (team) => team.team_id === team_id
+    ) || {
+      rank: null,
       solved_questions: 0,
       points: 0,
     };
 
     res.status(200).json({
-      rank: standing.rnk,
+      rank: standing.rank,
       solved: standing.solved_questions,
       total_problems: totalProblemsResult.rows[0].total,
       total_score: standing.points,

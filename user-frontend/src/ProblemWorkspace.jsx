@@ -861,7 +861,7 @@ export default function ProblemWorkspace({ darkMode, setDarkMode }) {
                     className="w-8 h-8 rounded-[8px] flex items-center justify-center font-bold text-[14px]"
                     style={{ backgroundColor: darkMode ? "#1A2E4B" : "#E8F0FE", color: "#3A7CF5" }}
                   >
-                    {problem.problem_code}
+                    {problem.problem_code} 
                   </span>
                   <h1 style={{ fontFamily: "'DM Sans', sans-serif", color: textColor }} className="text-[20px] font-bold tracking-[-0.3px]">
                     {problem.problem_name}
